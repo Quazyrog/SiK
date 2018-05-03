@@ -82,7 +82,11 @@ Telnet::Connection::Connection(TCPCharStream &&stream):
 
 char Telnet::Connection::get()
 {
-    while (stream_.peek() == -1 && interpretCommand_()) {}
+    scanCommands();
+    if (fakeCommands_ > 0) {
+        --fakeCommands_;
+        return -1;
+    }
     return stream_.get();
 }
 
@@ -218,4 +222,13 @@ Telnet::Connection &Telnet::Connection::operator<<(const Telnet::Option c)
 {
     stream_.put(c);
     return *this;
+}
+
+
+void Telnet::Connection::scanCommands()
+{
+    while (stream_.peek() == -1) {
+        if (!interpretCommand_())
+            ++fakeCommands_;
+    }
 }

@@ -68,6 +68,7 @@ class Connection
 {
 private:
     TCPCharStream stream_;
+    unsigned int fakeCommands_ = 0;
 
 
 protected:
@@ -96,8 +97,8 @@ public:
     Connection &operator<<(char c);
     Connection &operator<<(const char* c);
 
+    void scanCommands();
     void flush();
-
     void close();
 };
 
