@@ -1,4 +1,6 @@
 #include <cassert>
+#include <sys/ioctl.h>
+#include <stropts.h>
 #include "TCPSocket.hpp"
 #include "Util.hpp"
 
@@ -152,4 +154,14 @@ TCPCharStream::TCPCharStream(TCPCharStream &&old)
 
     outputBufferIndex_ = old.outputBufferIndex_;
     memcpy(outputBuffer_, old.outputBuffer_, BUFFER_CAPACITY_);
+}
+
+
+bool TCPCharStream::available()
+{
+    if (inputBufferIndex_ < inputBufferSize_)
+        return true;
+    int value;
+    ioctl(socketFD_, FIONREAD, &value);
+    return value > 0;
 }

@@ -227,8 +227,15 @@ Telnet::Connection &Telnet::Connection::operator<<(const Telnet::Option c)
 
 void Telnet::Connection::scanCommands()
 {
-    while (stream_.peek() == -1) {
+    while (stream_.available() && stream_.peek() == -1) {
         if (!interpretCommand_())
             ++fakeCommands_;
     }
+}
+
+
+Telnet::Connection &Telnet::Connection::operator<<(const std::string &c)
+{
+    *this << c.c_str();
+    return *this;
 }

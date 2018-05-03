@@ -84,7 +84,7 @@ public:
     Connection (const Connection &other)  = delete;
     Connection (Connection &&old) = default;
 
-    ~Connection();
+    virtual ~Connection();
 
     char get();
     void put(char c);
@@ -96,6 +96,7 @@ public:
 
     Connection &operator<<(char c);
     Connection &operator<<(const char* c);
+    Connection &operator<<(const std::string &c);
 
     void scanCommands();
     void flush();

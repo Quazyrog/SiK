@@ -79,6 +79,8 @@ public:
     void put(char c);
 
     void flush();
+
+    bool available();
 };
 
 
