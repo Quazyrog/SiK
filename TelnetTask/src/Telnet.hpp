@@ -68,11 +68,14 @@ class Connection
 private:
     TCPCharStream stream_;
 
-protected:
-    size_t iacIndex_ = 0;
 
+protected:
     bool interpretCommand_();
     void interpretSubnegotiationParameters_();
+
+    virtual void applyCommand_(Command cmd) = 0;
+    virtual void applyCommand_(Command negotiation, Option op) = 0;
+    virtual void applySubnegotiationParameters_(Option op, const char *params) = 0;
 
 public:
     explicit Connection(TCPCharStream &&stream);
@@ -86,7 +89,10 @@ public:
 
 public:
     Connection &operator<<(const IAC_ &iac);
-    Connection &operator<<(const char c);
+    Connection &operator<<(Command c);
+    Connection &operator<<(Option c);
+
+    Connection &operator<<(char c);
     Connection &operator<<(const char* c);
 
     void flush();

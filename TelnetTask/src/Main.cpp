@@ -7,7 +7,7 @@ int main()
 {
     srand(static_cast<unsigned int>(time(nullptr)));
     TCPSocket socket(static_cast<uint16_t>(10000 + (rand() % 100)));
-    std::clog << "MAIN:  Listening on port " << socket.port() << std::endl;
+    std::clog << "MAIN  : Listening on port " << socket.port() << std::endl;
 
     auto con = Telnet::Connection(socket.accept());
     con << "Hello World!\n";

@@ -96,14 +96,17 @@ bool Telnet::Connection::interpretCommand_()
         std::clog << "TELNET: Received unknown telnet command of code " << (int)stream_.peek();
     }
 
-    Command cmd = static_cast<Command>(stream_.get());
+    auto cmd = static_cast<Command>(stream_.get());
+    Option op;
     std::clog << "TELNET: Command received: IAC " << CommandNameByCode(cmd);
     switch (cmd) {
         case WILL:
         case WONT:
         case DO:
         case DONT:
-            std::clog << ' ' << OptionNameByCode(static_cast<Option>(stream_.get())) << std::endl;
+            op = static_cast<Option>(stream_.get());
+            std::clog << ' ' << OptionNameByCode(op) << std::endl;
+            applyCommand_(cmd, op);
             break;
         case SB:
             std::clog << std::endl;
@@ -111,6 +114,7 @@ bool Telnet::Connection::interpretCommand_()
             break;
         default:
             std::clog << std::endl;
+            applyCommand_(cmd);
             break;
     }
 
@@ -120,7 +124,7 @@ bool Telnet::Connection::interpretCommand_()
 
 void Telnet::Connection::interpretSubnegotiationParameters_()
 {
-    Option op = static_cast<Option>(stream_.get());
+    auto op = static_cast<Option>(stream_.get());
     std::string params;
     while (true) {
         char c = stream_.get();
@@ -148,40 +152,22 @@ void Telnet::Connection::interpretSubnegotiationParameters_()
         throw Error("expected AIC SB at end of sub-negotiation parameters not found");
     stream_.get();
     std::clog << "TELNET: Command received: IAC SE" << std::endl;
+    applySubnegotiationParameters_(op, params.c_str());
 }
 
 
 void Telnet::Connection::put(char c)
 {
-    switch (iacIndex_) {
-        case 0:  // No command is being written
-            if (c == -1)
-                stream_.put(-1), stream_.put(-1);
-            else
-                stream_.put(c);
-            break;
-        case 1: // AIC was written
-            stream_.put(c);
-            if (IsNegotiationCommand(c))
-                iacIndex_ = 2;
-            else
-                iacIndex_ = 0;
-            break;
-        case 2:
-            stream_.put(c);
-            iacIndex_ = 0;
-            break;
-        default:
-            assert(false);
-    }
+    if (c == -1)
+        stream_.put(-1), stream_.put(-1);
+    else
+        stream_.put(c);
 }
 
 
 Telnet::Connection &Telnet::Connection::operator<<(const Telnet::IAC_ &iac)
 {
-    assert(iacIndex_ == 0);
     stream_.put(-1);
-    iacIndex_ = 1;
     return *this;
 }
 
@@ -216,4 +202,18 @@ void Telnet::Connection::close()
 Telnet::Connection::~Connection()
 {
     std::clog << "TELNET: Taimi out!" << std::endl;
+}
+
+
+Telnet::Connection &Telnet::Connection::operator<<(const Telnet::Command c)
+{
+    stream_.put(c);
+    return *this;
+}
+
+
+Telnet::Connection &Telnet::Connection::operator<<(const Telnet::Option c)
+{
+    stream_.put(c);
+    return *this;
 }
