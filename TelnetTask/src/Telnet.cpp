@@ -66,6 +66,8 @@ const char *Telnet::OptionNameByCode(Telnet::Option cmd)
             return "ECHO";
         case SUPPRESS_GO_AHEAD:
             return "SUPPRESS_GO_AHEAD";
+        case NAWS:
+            return "NEGOTIATE_ABOUT_WINDOW_SIZE";
     }
     return "(Unknown)";
 }
@@ -152,7 +154,7 @@ void Telnet::Connection::interpretSubnegotiationParameters_()
         throw Error("expected AIC SB at end of sub-negotiation parameters not found");
     stream_.get();
     std::clog << "TELNET: Command received: IAC SE" << std::endl;
-    applySubnegotiationParameters_(op, params.c_str());
+    applySubnegotiationParameters_(op, params);
 }
 
 

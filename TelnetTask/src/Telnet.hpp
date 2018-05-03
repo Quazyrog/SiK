@@ -36,6 +36,7 @@ enum Option : char
 {
     ECHO = 1,
     SUPPRESS_GO_AHEAD = 3,
+    NAWS = 31,
     LINEMODE = 34,
 };
 
@@ -75,7 +76,7 @@ protected:
 
     virtual void applyCommand_(Command cmd) = 0;
     virtual void applyCommand_(Command negotiation, Option op) = 0;
-    virtual void applySubnegotiationParameters_(Option op, const char *params) = 0;
+    virtual void applySubnegotiationParameters_(Option op, const std::string &params) = 0;
 
 public:
     explicit Connection(TCPCharStream &&stream);
