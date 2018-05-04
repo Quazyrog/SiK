@@ -3,6 +3,7 @@
 #include "TCPSocket.hpp"
 #include "Telnet.hpp"
 #include "RemoteTerminal.hpp"
+#include "MenuApplication.hpp"
 
 
 int main()
@@ -13,12 +14,12 @@ int main()
     TCPSocket socket(static_cast<uint16_t>(10000 + (rand() % 100)));
     std::clog << "MAIN  : Listening on port " << socket.port() << std::endl;
 
-    auto con = RemoteTerminal(socket.accept());
-    con.move(con.screenWidth() / 2 - 6, con.screenHeight() / 2);
-    con << "Hello world!";
-    con.flush();
-    con.restoreConsole();
-    con.close();
-
-    return 0;
+    while (true) {
+        try {
+            MenuApplication menus(socket.accept());
+            menus.run();
+        } catch (std::runtime_error &e) {
+            std::clog << "MAIN: error occured: " << e.what() << std::endl;
+        }
+    }
 }

@@ -62,8 +62,8 @@ void RemoteTerminal::applySubnegotiationParameters_(Telnet::Option op, const std
             std::clog << "TERM: warning: invalid subnegotiation for NAWS" << std::endl;
             return;
         }
-        screenHeight_ = parse(params[0], params[1]);
-        screenWidth_ = parse(params[2], params[3]);
+        screenHeight_ = parse(params[2], params[3]);
+        screenWidth_ = parse(params[0], params[1]);
         std::clog << "TERM: window size is now " << screenWidth_ << 'x' << screenHeight_ << std::endl;
     }
 }
@@ -72,7 +72,7 @@ void RemoteTerminal::applySubnegotiationParameters_(Telnet::Option op, const std
 void RemoteTerminal::move(unsigned int x, unsigned int y)
 {
     std::stringstream s;
-    s << "\033[" << x << ';' << y << 'H';
+    s << "\033[" << y << ';' << x << 'H';
     *this << s.str();
 }
 
