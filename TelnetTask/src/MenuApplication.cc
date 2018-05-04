@@ -43,11 +43,10 @@ void MenuApplication::selectMenu(unsigned int menu_id)
             break;
         case 1:
             new_menu = new SubMenu;
-        default:
             break;
+        default:
+            throw std::out_of_range("menu item index out of range");
     }
-    if (new_menu == nullptr)
-        return;
     activeItem_ = 0;
     activeMenu_ = new_menu;
 }
@@ -193,5 +192,7 @@ void SubMenu::triggerItem(unsigned int item, struct MenuApplication &sender) con
         case 2:
             sender.selectMenu(0);
             break;
+        default:
+            throw std::out_of_range("menu item index out of range");
     }
 }
