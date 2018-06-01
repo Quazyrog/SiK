@@ -5,7 +5,7 @@
 
 
 
-namespace SiKRadio::Config {
+namespace Config {
 
 struct Params
 {
@@ -37,7 +37,7 @@ struct Params
 };
 
 
-Params defaults(int argc, char **argv);
+Params parse_args(int argc, char **argv);
 
 }
 

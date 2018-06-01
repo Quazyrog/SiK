@@ -1,0 +1,10 @@
+#ifndef SIKRADIO_EVENTENDPOINT_H
+#define SIKRADIO_EVENTENDPOINT_H
+
+
+class EventInput {
+
+};
+
+
+#endif //SIKRADIO_EVENTENDPOINT_H

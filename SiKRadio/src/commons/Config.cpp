@@ -1,8 +1,8 @@
 #include <Config.hpp>
 
-namespace SiKRadio::Config {
+namespace Config {
 
-Params defaults(int argc, char **argv)
+Params parse_args(int argc, char **argv)
 {
     const unsigned int ALBUM = 382710;
     Params result;

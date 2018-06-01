@@ -5,14 +5,25 @@
 
 
 
-namespace SiKRadio::Protocols {
+namespace Protocols {
+
+struct StationData
+{
+    std::string name;
+    std::string mcast_addr;
+    uint16_t port_num;
+};
+
+namespace Audio {
 
 struct AutioDataPacket
 {
     uint64_t session_id;
     uint64_t first_byte_num;
-    uint8_t  audio_data[];
+    uint8_t audio_data[];
 };
+
+}
 
 }
 
