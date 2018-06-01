@@ -21,6 +21,8 @@ public:
     Protocols::StationData stationByName(std::string name);
 
     Protocols::StationData lowestReplyStation();
+
+    void start();
 };
 
 }

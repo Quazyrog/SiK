@@ -30,3 +30,7 @@ Protocols::StationData Control::Handler::lowestReplyStation()
 {
 
 }
+
+void Control::Handler::start() {
+
+}

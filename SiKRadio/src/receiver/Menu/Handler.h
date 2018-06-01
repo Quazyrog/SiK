@@ -7,6 +7,8 @@ class Handler {
 
 public:
     Handler(Config::Params params, EventInput *pInput);
+
+    void start();
 };
 
 }

@@ -20,7 +20,13 @@ int main(int argc, char **argv)
     control_handler.lookup();
     Protocols::StationData station = params.station_name.empty() ? control_handler.lowestReplyStation()
             : control_handler.stationByName(params.station_name);
+
+    // Uruchom wszystkie wątki
+    data_handler.select_station(station);
     control_handler.lookup_timeout(5'000);
+    data_handler.start();
+    control_handler.start();
+    menu_handler.start();
 
     return event_hub.main_loop();
 }

@@ -10,8 +10,10 @@ set(TRANSMITTER_SOURCES
 set(RECEIVER_SOURCES
         src/receiver/Main.cpp
         src/receiver/EventHub.cpp
+        src/receiver/EventInput.cpp
         src/receiver/Control/Handler.cpp
-        src/receiver/Data/Handler.cpp src/receiver/EventInput.cpp src/receiver/EventInput.h)
+        src/receiver/Data/Handler.cpp
+        src/receiver/Menu/Handler.cpp)
 
 add_executable(nadajnik ${COMMON_SOURCES} ${TRANSMITTER_SOURCES})
 target_include_directories(nadajnik PUBLIC src/commons)
