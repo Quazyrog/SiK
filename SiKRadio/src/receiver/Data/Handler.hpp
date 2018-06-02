@@ -12,7 +12,7 @@ class Handler
 public:
     Handler(Config::Params params, EventInput *pInput);
 
-    void select_station(Protocols::StationData data);
+    void select_station(Utility::StationData data);
 
     void start();
 };

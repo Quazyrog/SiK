@@ -5,7 +5,7 @@
 
 
 
-namespace Protocols {
+namespace Utility {
 
 struct StationData
 {

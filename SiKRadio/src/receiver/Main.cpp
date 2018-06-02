@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 
     // Znajdź stację
     control_handler.lookup();
-    Protocols::StationData station = params.station_name.empty() ? control_handler.lowestReplyStation()
+    Utility::StationData station = params.station_name.empty() ? control_handler.lowestReplyStation()
             : control_handler.stationByName(params.station_name);
 
     // Uruchom wszystkie wątki

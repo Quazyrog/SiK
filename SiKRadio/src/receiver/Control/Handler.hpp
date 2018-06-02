@@ -18,9 +18,9 @@ public:
 
     void lookup_timeout(unsigned int miliseconds);
 
-    Protocols::StationData stationByName(std::string name);
+    Utility::StationData stationByName(std::string name);
 
-    Protocols::StationData lowestReplyStation();
+    Utility::StationData lowestReplyStation();
 
     void start();
 };

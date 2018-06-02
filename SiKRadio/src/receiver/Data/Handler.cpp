@@ -12,6 +12,6 @@ void Data::Handler::start() {
 
 }
 
-void Data::Handler::select_station(Protocols::StationData data) {
+void Data::Handler::select_station(Utility::StationData data) {
 
 }

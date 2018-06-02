@@ -20,13 +20,13 @@ void Control::Handler::lookup_timeout(unsigned int miliseconds)
 }
 
 
-Protocols::StationData Control::Handler::stationByName(std::string name)
+Utility::StationData Control::Handler::stationByName(std::string name)
 {
 
 }
 
 
-Protocols::StationData Control::Handler::lowestReplyStation()
+Utility::StationData Control::Handler::lowestReplyStation()
 {
 
 }

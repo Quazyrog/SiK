@@ -10,7 +10,7 @@
 
 
 
-Reactor::Reactor()
+Utility::Reactor::Reactor::Reactor()
 {
     epoll = epoll_create1(0);
     if (epoll < 0)
@@ -18,7 +18,7 @@ Reactor::Reactor()
 }
 
 
-void Reactor::add_timer(unsigned int rel_start_ms, unsigned int interval_ms, std::string name)
+void Utility::Reactor::Reactor::add_timer(unsigned int rel_start_ms, unsigned int interval_ms, std::string name)
 {
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
     if (fd < 0)
@@ -42,7 +42,7 @@ void Reactor::add_timer(unsigned int rel_start_ms, unsigned int interval_ms, std
 }
 
 
-void Reactor::operator()()
+void Utility::Reactor::Reactor::operator()()
 {
     running = true;
     while (running) {
@@ -56,7 +56,7 @@ void Reactor::operator()()
 }
 
 
-void Reactor::stop()
+void Utility::Reactor::Reactor::stop()
 {
     running = false;
 }
