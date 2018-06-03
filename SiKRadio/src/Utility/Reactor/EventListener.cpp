@@ -46,6 +46,7 @@ void EventListener::operator()()
 void EventListener::stop()
 {
     stopped_ = true;
+    // FIXME this should also lock some mutex...
     for_event_.notify_all();
 }
 
@@ -77,6 +78,7 @@ std::shared_ptr<Event> EventListener::select_event_()
 
 bool EventListener::filter_event_(std::shared_ptr<Event> event)
 {
+    // FIXME data race with filter adding/removing?
     const std::string &name = event->name();
     for (auto &filter : filters_) {
         const std::regex &regex = filter.second;

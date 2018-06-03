@@ -14,6 +14,10 @@
 
 
 namespace Utility::Reactor {
+
+/**
+ * The very heart of everything — asynchronous reactor.
+ */ // TODO describe how it works
 class Reactor
 {
     /// Shall the reactor's main loop be still running
@@ -50,15 +54,34 @@ class Reactor
      */
     void remove_resource_unsafe_(std::shared_ptr<DescriptorResource> resource);
 
+    /**
+     * Handles data incoming to Reactor's pipe.
+     * Mostly used for broadcasting custom events as well as waking up the reactor after <c>stop()</c> is called.
+     */
     void handle_pipe_();
+    /**
+     * Handles event from resource assigned to given descriptor.
+     * @param fd descriptor where event occurred
+     * @param events what kind of event occurred (as returned by <c>epoll_wait()</c>)
+     */
     void handle_resource_(int fd, uint32_t events);
+    /**
+     * Send notification about event to all listeners.
+     * It just places it in queue and wakes up one listener thread for every listener.
+     * @param event event to be dispatched (#notnull)
+     */
     void dispatch_(std::shared_ptr<Event> event);
 
 public:
+    /// Maximal length of event name
     static const size_t EVENT_NAME_MAX = PIPE_BUF;
 
+    /**
+     * Construct the reactor.
+     * It will create all the necessary structures in OS.
+     */
     Reactor();
-    // FIXME destructor needed
+    ~Reactor();
 
     /**
      * Bind <c>DescriptorResource</c> to the reactor using given event name.
@@ -86,7 +109,17 @@ public:
      */
     void remove_resource(std::shared_ptr<DescriptorResource> resource);
 
+    /**
+     * Add asynchronous event listener to the reactor.
+     * It will be notified about any event that occurred; single listener can be added just once.
+     * @param listener new EventListener
+     */
     void add_listener(std::shared_ptr<EventListener> listener);
+    /**
+     * Remove <c>EventListener</c> from reactor.
+     * It must be present or else exception is thrown.
+     * @param listener
+     */
     void remove_listener(std::shared_ptr<EventListener> listener);
 
     /**

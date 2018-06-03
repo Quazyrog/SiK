@@ -141,7 +141,7 @@ void Reactor::remove_resource_unsafe_(std::shared_ptr<DescriptorResource> resour
 
 void Reactor::handle_pipe_()
 {
-    // TODO ...
+    // TODO implement custom events broadcasting
 }
 
 
@@ -206,6 +206,15 @@ void Reactor::remove_resource(std::shared_ptr<DescriptorResource> resource)
 {
     std::lock_guard lg(descriptor_resources_lock_);
     remove_resource_unsafe_(resource);
+}
+
+
+Reactor::~Reactor()
+{
+    close(epoll_);
+    close(reactors_pipe_[0]);
+    close(reactors_pipe_[1]);
+    // RAII in resources will do the rest
 }
 
 }

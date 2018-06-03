@@ -58,6 +58,7 @@ uint32_t Timer::event_mask() const
 
 std::shared_ptr<Event> Timer::generate_event(uint32_t, DescriptorResource::ResourceAction &action)
 {
+    // FIXME remove timers that wil not fire anymore
     uint64_t times_passed;
     read(fd_, &times_passed, sizeof(times_passed));
     action = DO_NOTHING;
