@@ -5,17 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(COMMON_SOURCES
         src/Utility/Config.cpp
-        src/Utility/Reactor/Timer.cpp
-        src/Utility/Reactor/Reactor.cpp)
+        src/Utility/Reactor/Event.cpp
+        src/Utility/Reactor/EventListener.cpp
+        src/Utility/Reactor/Reactor.cpp
+        src/Utility/Reactor/Timer.cpp)
 set(TRANSMITTER_SOURCES
-        src/transmitter/Main.cpp src/receiver/Menu/Handler.cpp src/receiver/Menu/Handler.h)
+        src/transmitter/Main.cpp)
 set(RECEIVER_SOURCES
-        src/receiver/Main.cpp
-        src/receiver/EventHub.cpp
-        src/receiver/EventInput.cpp
-        src/receiver/Control/Handler.cpp
-        src/receiver/Data/Handler.cpp
-        src/receiver/Menu/Handler.cpp)
+        src/Receiver/Main.cpp)
 
 add_executable(nadajnik ${COMMON_SOURCES} ${TRANSMITTER_SOURCES})
 target_include_directories(nadajnik PUBLIC src/Utility)

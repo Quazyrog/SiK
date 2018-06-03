@@ -6,13 +6,15 @@
 
 namespace Utility::Reactor {
 
-void EventListener::add_filter_(std::regex filter)
+void EventListener::add_filter_(const std::string &filter)
 {
-    filters_.insert(std::move(filter));
+    if (filters_.find(filter) != filters_.end())
+        throw std::invalid_argument("Filter `" + filter + "` added twice");
+    filters_[filter] = std::regex(filter);
 }
 
 
-void EventListener::remove_filter_(const std::regex &filter)
+void EventListener::remove_filter_(const std::string &filter)
 {
     auto it = filters_.find(filter);
     if (it != filters_.end())
@@ -52,7 +54,7 @@ std::shared_ptr<Event> EventListener::select_event_()
 
     do {
         lock.lock();
-        for_event_.wait(lock, []() {return !unhandled_events_.empty() | stopped_;});
+        for_event_.wait(lock, [this]() {return !unhandled_events_.empty() | stopped_;});
         if (stopped_) {
             lock.unlock();
             return nullptr;
@@ -72,8 +74,9 @@ std::shared_ptr<Event> EventListener::select_event_()
 bool EventListener::filter_event_(std::shared_ptr<Event> event)
 {
     const std::string &name = event->name();
-    for (auto filter : filters_) {
-        if (std::regex_match(name, filter))
+    for (auto &filter : filters_) {
+        const std::regex &regex = filter.second;
+        if (std::regex_match(name, regex))
             return true;
     }
     return false;

@@ -3,7 +3,7 @@
 
 
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include <memory>
 #include <mutex>
 #include <list>
@@ -25,14 +25,14 @@ private:
     std::condition_variable for_event_;
 
     std::list<std::shared_ptr<Event>> unhandled_events_;
-    std::unordered_set<std::regex> filters_;
+    std::unordered_map<std::string, std::regex> filters_;
 
     std::shared_ptr<Event> select_event_();
 
 
 protected:
-    void add_filter_(std::regex filter);
-    void remove_filter_(const std::regex &filter);
+    void add_filter_(const std::string &filter);
+    void remove_filter_(const std::string &filter);
 
     virtual bool filter_event_(std::shared_ptr<Event> event);
     virtual void handle_event_(std::shared_ptr<Event> event) = 0;
