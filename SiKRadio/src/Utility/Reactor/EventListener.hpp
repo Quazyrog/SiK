@@ -19,6 +19,9 @@ namespace Utility::Reactor {
 class EventListener
 {
 private:
+    static std::atomic_uint32_t instances_counter_;
+
+    uint32_t instance_id_ = ++instances_counter_;
     std::atomic_bool stopped_ = false;
 
     std::mutex mutex_;
@@ -38,11 +41,14 @@ protected:
     virtual void handle_event_(std::shared_ptr<Event> event) = 0;
 
 public:
-    virtual std::string name() const = 0;
+    uint32_t instance_id() const
+    {
+        return instance_id_;
+    }
 
     void notify(std::shared_ptr<Event> event);
 
-    void start();
+    void operator()();
     void stop();
 };
 

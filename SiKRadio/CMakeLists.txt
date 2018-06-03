@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(COMMON_SOURCES
         src/Utility/Config.cpp
+        src/Utility/Reactor/DescriptorResource.cpp
         src/Utility/Reactor/Event.cpp
         src/Utility/Reactor/EventListener.cpp
         src/Utility/Reactor/Reactor.cpp

@@ -6,6 +6,9 @@
 
 namespace Utility::Reactor {
 
+std::atomic_uint32_t EventListener::instances_counter_{0};
+
+
 void EventListener::add_filter_(const std::string &filter)
 {
     if (filters_.find(filter) != filters_.end())
@@ -30,7 +33,7 @@ void EventListener::notify(std::shared_ptr<Event> event)
 }
 
 
-void EventListener::start()
+void EventListener::operator()()
 {
     while (!stopped_) {
         auto event = select_event_();
