@@ -6,9 +6,10 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <mutex>
 
 #include "Timer.hpp"
-
+#include "DescriptorResource.hpp"
 
 
 namespace Utility::Reactor {
@@ -16,13 +17,12 @@ class Reactor
 {
     std::atomic_bool running_ = true;
     int epoll_ = -1;
-    std::unordered_map<std::string, std::string> descriptor_resources;
+
+    std::mutex descriptor_resources_lock_;
+    std::unordered_map<std::string, std::shared_ptr<DescriptorResource>> descriptor_resources_;
 
 
 public:
-    static bool validate_event_name(const std::string &name, bool allow_wildcard);
-
-
     Reactor();
 
     void add_descriptor_resource(const std::string &event_name, std::shared_ptr<DescriptorResource> resource);
