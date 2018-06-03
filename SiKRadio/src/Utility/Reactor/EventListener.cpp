@@ -56,8 +56,9 @@ std::shared_ptr<Event> EventListener::select_event_()
     std::unique_lock lock(mutex_, std::defer_lock);
 
     do {
+        selected = nullptr;
         lock.lock();
-        for_event_.wait(lock, [this]() {return !unhandled_events_.empty() | stopped_;});
+        for_event_.wait(lock, [this]() {return !unhandled_events_.empty() || stopped_;});
         if (stopped_) {
             lock.unlock();
             return nullptr;
@@ -68,7 +69,7 @@ std::shared_ptr<Event> EventListener::select_event_()
 
         if (!filter_event_(selected))
             selected = nullptr;
-    } while (selected != nullptr);
+    } while (selected == nullptr);
 
     return selected;
 }
