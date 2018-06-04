@@ -5,7 +5,7 @@
 
 
 
-namespace Config {
+namespace Utility::Misc {
 
 struct Params
 {
@@ -34,10 +34,28 @@ struct Params
 
     /// Nazwa stacji nadajnika
     std::string station_name;
+
+    /**
+     * Set default values.
+     */
+    Params();
 };
 
 
-Params parse_args(int argc, char **argv);
+struct StationData
+{
+    std::string name;
+    std::string mcast_addr;
+    uint16_t port_num;
+};
+
+
+struct AutioDataPacket
+{
+    uint64_t session_id;
+    uint64_t first_byte_num;
+    uint8_t audio_data[];
+};
 
 }
 

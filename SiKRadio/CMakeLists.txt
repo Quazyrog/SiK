@@ -2,9 +2,11 @@ cmake_minimum_required(VERSION 3.9)
 project(SiKRadio)
 
 set(CMAKE_CXX_STANDARD 17)
+find_package(Boost 1.66 COMPONENTS program_options REQUIRED)
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 
 set(COMMON_SOURCES
-        src/Utility/Config.cpp
+        src/Utility/Misc.cpp
         src/Utility/Network/Address.cpp
         src/Utility/Network/UDPSocket.cpp
         src/Utility/Reactor/DescriptorResource.cpp
@@ -13,7 +15,7 @@ set(COMMON_SOURCES
         src/Utility/Reactor/InputStreamResource.cpp
         src/Utility/Reactor/Reactor.cpp
         src/Utility/Reactor/Timer.cpp)
-link_libraries(-lpthread)
+link_libraries(-lpthread ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LIBRARIES})
 
 set(TRANSMITTER_SOURCES
         src/Transmitter/Main.cpp)
