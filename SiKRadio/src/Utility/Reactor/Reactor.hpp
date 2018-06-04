@@ -53,7 +53,7 @@ class Reactor
      * @param resource altered resource
      * @param new_mask mask to be set
      */
-    void change_event_mask_(std::shared_ptr<const DescriptorResource> resource, uint32_t new_mask);
+    void change_event_mask_(const DescriptorResource *resource, uint32_t new_mask);
 
     /**
      * Actually does the work of <c>remove_resource()</c> but assumes that we have lock already acquired.
@@ -118,13 +118,13 @@ public:
      * <c>DescriptorResource::generate_event()</c> (such resources can produce events infinitely if not suspended).
      * @param resource
      */
-    void suspend_resource(std::shared_ptr<const DescriptorResource> resource);
+    void suspend_resource(const DescriptorResource *resource);
     /**
      * Reenable suspended resource.
      * Can be safely called on resources that were not suspended.
      * @param resource resource to be reenabled.
      */
-    void reenable_resource(std::shared_ptr<const DescriptorResource> resource);
+    void reenable_resource(const DescriptorResource *resource);
     /**
      * Unbind <c>DescriptorResource</c> from this reactor.
      * Resource must be bound to the reactor.

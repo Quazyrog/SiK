@@ -93,28 +93,28 @@ void Reactor::stop()
 }
 
 
-void Reactor::suspend_resource(std::shared_ptr<const DescriptorResource> resource)
+void Reactor::suspend_resource(const DescriptorResource *resource)
 {
     std::lock_guard lg(resources_lock_);
     change_event_mask_(resource, 0);
 }
 
 
-void Reactor::reenable_resource(std::shared_ptr<const DescriptorResource> resource)
+void Reactor::reenable_resource(const DescriptorResource *resource)
 {
     std::lock_guard lg(resources_lock_);
     change_event_mask_(resource, resource->event_mask());
 }
 
 
-void Reactor::change_event_mask_(std::shared_ptr<const DescriptorResource> resource, uint32_t new_mask)
+void Reactor::change_event_mask_(const DescriptorResource *resource, uint32_t new_mask)
 {
     // Assure we have such resource
 
     auto it = resources_.find(resource->descriptor());
     if (it == resources_.end())
         throw std::invalid_argument("No such resource in reactor");
-    assert(it->second == resource);
+    assert(it->second.get() == resource);
 
     // Now change mask
     epoll_event ev;
@@ -191,7 +191,7 @@ void Reactor::handle_resource_(int fd, uint32_t events)
     if (!resource->is_bound_to(this))
         return; // somebody removed the resource... hope he knew what he was doing xD
     if (action & DescriptorResource::SUSPEND) {
-        change_event_mask_(resource, 0);
+        change_event_mask_(resource.get(), 0);
     }
     if (action & DescriptorResource::REMOVE_FROM_REACTOR) {
         remove_resource_unsafe_(resource);

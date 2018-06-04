@@ -8,6 +8,7 @@ set(COMMON_SOURCES
         src/Utility/Reactor/DescriptorResource.cpp
         src/Utility/Reactor/Event.cpp
         src/Utility/Reactor/EventListener.cpp
+        src/Utility/Reactor/InputStreamResource.cpp
         src/Utility/Reactor/Reactor.cpp
         src/Utility/Reactor/Timer.cpp)
 link_libraries(-lpthread)

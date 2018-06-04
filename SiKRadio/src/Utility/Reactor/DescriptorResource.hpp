@@ -76,6 +76,11 @@ public:
      */
     bool is_bound_to(class Reactor *reactor) const;
 
+    Reactor *bound_reactor() const
+    {
+        return bound_reactor_;
+    }
+
     /**
      * Return file descriptor owned by this resource.
      */

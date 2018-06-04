@@ -20,6 +20,19 @@ public:
     {}
 };
 
+
+class IOError : public SystemError
+{
+public:
+    IOError(const std::string &msg):
+        SystemError(msg)
+    {}
+
+    IOError(const std::string &msg, int err_no):
+        SystemError(msg, err_no)
+    {}
+};
+
 }
 
 #endif //SIKRADIO_EXCEPTIONS_HPP
