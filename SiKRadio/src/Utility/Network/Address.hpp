@@ -23,6 +23,7 @@ public:
     static Address localhost(uint16_t port);
 
     Address();
+    explicit Address(const std::string &host);
     Address(const std::string &host, uint16_t port);
 
     void host(std::string host);

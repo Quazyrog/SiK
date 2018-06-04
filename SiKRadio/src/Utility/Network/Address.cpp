@@ -17,12 +17,17 @@ Address::Address()
 {}
 
 
+Address::Address(const std::string &host):
+    Address(host, 0)
+{}
+
 Address::Address(const std::string &host, uint16_t port)
 {
     addr_.sin_family = AF_INET;
     this->host(host);
     this->port(port);
 }
+
 
 Address::operator sockaddr() const
 {

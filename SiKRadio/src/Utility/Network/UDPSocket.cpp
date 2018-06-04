@@ -42,30 +42,6 @@ size_t UDPSocket::receive(char *buffer, size_t max_len, Address &remote_addr)
 }
 
 
-int UDPSocket::descriptor() const
-{
-    return fd_;
-}
-
-
-uint32_t UDPSocket::event_mask() const
-{
-    return EPOLLIN;
-}
-
-
-std::shared_ptr<Utility::Reactor::Event>
-UDPSocket::generate_event(uint32_t event_mask, Reactor::DescriptorResource::ResourceAction &action)
-{
-    if (!(event_mask & EPOLLIN)) {
-        action = DO_NOTHING;
-        return nullptr;
-    }
-    action = SUSPEND;
-    return std::make_shared<UDPSocketEvent>(this);
-}
-
-
 UDPSocket::~UDPSocket()
 {
     close(fd_);
@@ -82,21 +58,13 @@ size_t UDPSocket::send(const char *data, size_t length, const Address &destinati
 }
 
 
-UDPSocketEvent::UDPSocketEvent(UDPSocket *source) :
-    Event(source->bound_name()),
-    source_(source)
-{}
-
-
-UDPSocket *UDPSocketEvent::source() const
+void UDPSocket::join_multicast(const Address &group_address)
 {
-    return source_;
-}
-
-
-void UDPSocketEvent::reenable_source()
-{
-    source_->bound_reactor()->reenable_resource(source_);
+    ip_mreq ip_mreq;
+    ip_mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    ip_mreq.imr_multiaddr = group_address.addr_.sin_addr;
+    if (setsockopt(fd_, IPPROTO_IP, IP_ADD_MEMBERSHIP, (void*)&ip_mreq, sizeof ip_mreq) < 0)
+        throw Utility::Exceptions::SystemError("Failed to join multi-cast group");
 }
 
 }

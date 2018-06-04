@@ -14,7 +14,7 @@ namespace
     {
     public:
         StdinResource():
-            InputStreamResource(0, false)
+            InputStreamResource(0)
         {}
     };
 }
@@ -23,9 +23,8 @@ namespace
 std::atomic<class InputStreamResource*> stdin_resource_{nullptr};
 
 
-InputStreamResource::InputStreamResource(int fd, bool auto_close):
-    fd_(fd),
-    auto_close_(auto_close)
+InputStreamResource::InputStreamResource(int fd):
+    fd_(fd)
 {}
 
 
@@ -65,13 +64,6 @@ size_t InputStreamResource::read(char *buf, const size_t max_len)
 std::shared_ptr<class InputStreamResource> InputStreamResource::stdin_resource()
 {
     return std::make_shared<StdinResource>();
-}
-
-
-InputStreamResource::~InputStreamResource()
-{
-    if (auto_close_)
-        close(fd_);
 }
 
 

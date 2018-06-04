@@ -16,18 +16,17 @@ namespace Utility::Reactor {
  */
 class InputStreamResource : public DescriptorResource
 {
+protected:
     /// File descriptor
     int fd_;
-    /// Should <c>close(fd_)</c> be called in destructor?
-    bool auto_close_;
 
-protected:
+    explicit InputStreamResource() = default;
     /**
      * Initialise new resource assigned to given file descriptor
      * @param fd resource's file descriptor
      */
-    explicit InputStreamResource(int fd, bool auto_close=true);
-    virtual ~InputStreamResource();
+    explicit InputStreamResource(int fd);
+    virtual ~InputStreamResource() = default;
 
 public:
     /**
