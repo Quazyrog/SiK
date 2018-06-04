@@ -67,4 +67,29 @@ void UDPSocket::join_multicast(const Address &group_address)
         throw Utility::Exceptions::SystemError("Failed to join multi-cast group");
 }
 
+
+void UDPSocket::leave_multicast(const Address &group_address)
+{
+    ip_mreq ip_mreq;
+    ip_mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    ip_mreq.imr_multiaddr = group_address.addr_.sin_addr;
+    if (setsockopt(fd_, IPPROTO_IP, IP_DROP_MEMBERSHIP, (void*)&ip_mreq, sizeof ip_mreq) < 0)
+        throw Utility::Exceptions::SystemError("Failed to leave multi-cast group");
+}
+
+
+void UDPSocket::enable_broadcast()
+{
+    int optval = 1;
+    if (setsockopt(fd_, SOL_SOCKET, SO_BROADCAST, (void*)&optval, sizeof(optval)) < 0)
+        throw Utility::Exceptions::SystemError("setsockopt failed when enabling broadcast");
+}
+
+
+void UDPSocket::set_multicast_ttl(int ttl)
+{
+    if (setsockopt(fd_, IPPROTO_IP, IP_MULTICAST_TTL, (void*)&ttl, sizeof(ttl)) < 0)
+        throw Utility::Exceptions::SystemError("Cannot set multicast ttl=" + std::to_string(ttl));
+}
+
 }

@@ -21,7 +21,10 @@ public:
     size_t receive(char *buffer, size_t max_len);
     size_t send(const char *data, size_t length, const Address &destination);
 
+    void enable_broadcast();
     void join_multicast(const Address &group_address);
+    void leave_multicast(const Address &group_address);
+    void set_multicast_ttl(int ttl);
 };
 
 
