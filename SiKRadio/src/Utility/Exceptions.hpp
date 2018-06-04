@@ -12,11 +12,11 @@ class SystemError : public std::runtime_error
 {
 public:
     SystemError(const std::string &msg):
-        runtime_error(msg + "(errno " + std::to_string(errno) + ": " + strerror(errno) + ")")
+        runtime_error(msg + "  (errno " + std::to_string(errno) + ": " + strerror(errno) + ")")
     {}
 
     SystemError(const std::string &msg, int err_no):
-            runtime_error(msg + "(errno " + std::to_string(err_no) + ": " + strerror(err_no) + ")")
+            runtime_error(msg + "  (errno " + std::to_string(err_no) + ": " + strerror(err_no) + ")")
     {}
 };
 

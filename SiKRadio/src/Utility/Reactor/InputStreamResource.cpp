@@ -31,8 +31,7 @@ InputStreamResource::InputStreamResource(int fd, bool auto_close):
 
 int InputStreamResource::descriptor() const
 {
-    if (auto_close_)
-        return fd_;
+    return fd_;
 }
 
 
@@ -71,7 +70,8 @@ std::shared_ptr<class InputStreamResource> InputStreamResource::stdin_resource()
 
 InputStreamResource::~InputStreamResource()
 {
-    close(fd_);
+    if (auto_close_)
+        close(fd_);
 }
 
 

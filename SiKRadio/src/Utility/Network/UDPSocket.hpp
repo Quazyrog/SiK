@@ -16,7 +16,7 @@ protected:
 
 public:
     UDPSocket();
-    ~UDPSocket();
+    virtual ~UDPSocket();
 
     // Inherited from DescriptorResource
     int descriptor() const override;
