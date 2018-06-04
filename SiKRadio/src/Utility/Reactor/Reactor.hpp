@@ -20,6 +20,8 @@ namespace Utility::Reactor {
  */ // TODO describe how it works
 class Reactor
 {
+    static const std::string STOP_EVENT_NAME_;
+
     /// Shall the reactor's main loop be still running
     std::atomic_bool running_ = true;
 
@@ -29,16 +31,21 @@ class Reactor
     int reactors_pipe_[2];
 
     /// Guards access to resources mappings
-    std::mutex descriptor_resources_lock_;
+    std::mutex resources_lock_;
     /// Event names reserved for resources in epoll
-    std::unordered_set<std::string> descriptor_resources_names_;
+    std::unordered_set<std::string> resources_names_;
     /// Holds mappings <c>descriptor -> resource</c> for all resources in epoll
-    std::unordered_map<int, std::shared_ptr<DescriptorResource>> descriptor_resources_;
+    std::unordered_map<int, std::shared_ptr<DescriptorResource>> resources_;
 
     /// Guards access to event listeners map
     std::mutex listeners_guard_;
     /// Event listeners
     std::unordered_map<uint32_t, std::shared_ptr<EventListener>> listeners_;
+
+    /// Guards access to custom events mappings
+    std::mutex custom_events_lock_;
+    /// Multimap <c>custom_event_name -> event_object</c>
+    std::multimap<std::string, std::shared_ptr<Event>> custom_events_;
 
     /**
      * Change waited event mask for resource in epoll.
@@ -71,6 +78,22 @@ class Reactor
      * @param event event to be dispatched (#notnull)
      */
     void dispatch_(std::shared_ptr<Event> event);
+
+    /**
+     * Check if event assigned with that name is internal event.
+     * Internal events are reads to <c>reactors_pipe_</c> without assigned event in <c>custom_events</c>, that are used
+     * for waking up reactor's thread for some reason (for example when reactor was requested to stop).
+     * Currently reserved internal event names are <c>"/Reactor/.*"</c>.
+     * @param name tested event name — read from <c>reactors_pipe_</c>
+     * @return if the event name is reserved for internal reactor's events
+     */
+    bool is_internal_name_(const std::string &name);
+    /**
+     * Handles internal reactor event; does following:
+     *  - For <c>/Reactor/Stop</c> does nothing, as reactor probably was restarted
+     * @param name name of internal event
+     */
+    void handle_internal_event_(const std::string &name);
 
 public:
     /// Maximal length of event name
@@ -121,6 +144,14 @@ public:
      * @param listener
      */
     void remove_listener(std::shared_ptr<EventListener> listener);
+
+    /**
+     * Broadcast custom event object with given name assigned.
+     * Return immediately after event is passed to reactor, not waiting for broadcasting. Event name must be unused
+     * (i.e. must not be reserved for internal reactor event nor for any resource).
+     * @param event event that will be dispatched
+     */
+    void broadcast_event(std::shared_ptr<Event> event);
 
     /**
      * Enter the main loop.

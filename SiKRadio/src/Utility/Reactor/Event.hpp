@@ -22,6 +22,7 @@ public:
      * @param name event name (same as registered in reactor (for resources), or as given as parameter to broadcast).
      */
     Event(std::string name);
+    virtual ~Event() = default;
 
     /**
      * Return the name of this event.

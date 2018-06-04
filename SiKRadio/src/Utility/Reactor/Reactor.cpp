@@ -10,6 +10,9 @@ using Utility::Exceptions::SystemError;
 
 namespace Utility::Reactor {
 
+const std::string Reactor::STOP_EVENT_NAME_ = "/Reactor/Stop";
+
+
 Reactor::Reactor()
 {
     // Create epoll
@@ -38,14 +41,14 @@ Reactor::Reactor()
 
 void Reactor::add_resource(const std::string &event_name, std::shared_ptr<DescriptorResource> resource)
 {
-    std::lock_guard lock_guard(descriptor_resources_lock_);
-    if (event_name.substr(0, 9) == "/Reactor/")
+    std::lock_guard lock_guard(resources_lock_);
+    if (is_internal_name_(event_name))
         throw std::invalid_argument("Event names prefixed `/Reactor/` are reserved");
 
     // Check if mappings are free and bind resource
-    if (descriptor_resources_names_.find(event_name) != descriptor_resources_names_.end())
+    if (resources_names_.find(event_name) != resources_names_.end())
         throw std::invalid_argument("Resource with event's name `" + event_name + "` already present");
-    if (descriptor_resources_.find(resource->descriptor()) != descriptor_resources_.end())
+    if (resources_.find(resource->descriptor()) != resources_.end())
         throw std::invalid_argument("Resource with fd " + std::to_string(resource->descriptor()) + " already present");
     resource->bind_(this, event_name);
 
@@ -59,8 +62,8 @@ void Reactor::add_resource(const std::string &event_name, std::shared_ptr<Descri
     }
 
     // Now add mappings
-    descriptor_resources_[resource->descriptor()] = resource;
-    descriptor_resources_names_.emplace(event_name);
+    resources_[resource->descriptor()] = resource;
+    resources_names_.emplace(event_name);
 }
 
 
@@ -86,19 +89,20 @@ void Reactor::operator()()
 void Reactor::stop()
 {
     running_ = false;
+    write(reactors_pipe_[1], STOP_EVENT_NAME_.c_str(), STOP_EVENT_NAME_.length());
 }
 
 
 void Reactor::suspend_resource(std::shared_ptr<const DescriptorResource> resource)
 {
-    std::lock_guard lg(descriptor_resources_lock_);
+    std::lock_guard lg(resources_lock_);
     change_event_mask_(resource, 0);
 }
 
 
 void Reactor::reenable_resource(std::shared_ptr<const DescriptorResource> resource)
 {
-    std::lock_guard lg(descriptor_resources_lock_);
+    std::lock_guard lg(resources_lock_);
     change_event_mask_(resource, resource->event_mask());
 }
 
@@ -107,8 +111,8 @@ void Reactor::change_event_mask_(std::shared_ptr<const DescriptorResource> resou
 {
     // Assure we have such resource
 
-    auto it = descriptor_resources_.find(resource->descriptor());
-    if (it == descriptor_resources_.end())
+    auto it = resources_.find(resource->descriptor());
+    if (it == resources_.end())
         throw std::invalid_argument("No such resource in reactor");
     assert(it->second == resource);
 
@@ -124,16 +128,16 @@ void Reactor::change_event_mask_(std::shared_ptr<const DescriptorResource> resou
 void Reactor::remove_resource_unsafe_(std::shared_ptr<DescriptorResource> resource)
 {
     // Erase from descriptors map
-    auto fd_it = descriptor_resources_.find(resource->descriptor());
-    if (fd_it == descriptor_resources_.end())
+    auto fd_it = resources_.find(resource->descriptor());
+    if (fd_it == resources_.end())
         throw std::invalid_argument("No such resource in reactor");
     assert(fd_it->second == resource);
-    descriptor_resources_.erase(fd_it);
+    resources_.erase(fd_it);
 
     // Free name
-    auto nm_it = descriptor_resources_names_.find(resource->bound_name());
-    assert(nm_it != descriptor_resources_names_.end());
-    descriptor_resources_names_.erase(nm_it);
+    auto nm_it = resources_names_.find(resource->bound_name());
+    assert(nm_it != resources_names_.end());
+    resources_names_.erase(nm_it);
 
     resource->unbind_();
 }
@@ -141,7 +145,28 @@ void Reactor::remove_resource_unsafe_(std::shared_ptr<DescriptorResource> resour
 
 void Reactor::handle_pipe_()
 {
-    // TODO implement custom events broadcasting
+    // Read event name
+    char *buffer = new char[EVENT_NAME_MAX + 1];
+    std::memset(buffer, 0, EVENT_NAME_MAX + 1);
+    /* pipe is in packet (O_DIRECT) mode, thus it will read entire name and only entire name*/
+    read(reactors_pipe_[0], buffer, EVENT_NAME_MAX);
+    std::string event_name{buffer};
+    delete [] buffer;
+    buffer = nullptr;
+
+    // Dispatch or handle internal
+    if (is_internal_name_(event_name)) {
+        handle_internal_event_(event_name);
+    } else {
+        custom_events_lock_.lock();
+        auto range = custom_events_.equal_range(event_name);
+        assert(range.first != range.second);
+        auto event = range.first->second;
+        custom_events_.erase(range.first);
+        custom_events_lock_.unlock();
+        dispatch_(event);
+    }
+
 }
 
 
@@ -150,10 +175,10 @@ void Reactor::handle_resource_(int fd, uint32_t events)
     DescriptorResource::ResourceAction action;
 
     // Generate the event
-    descriptor_resources_lock_.lock();
-    auto resource = descriptor_resources_.at(fd);
+    resources_lock_.lock();
+    auto resource = resources_.at(fd);
     auto event = resource->generate_event(events, action); // yep, we still want lock
-    descriptor_resources_lock_.unlock();
+    resources_lock_.unlock();
 
     // Dispatch
     if (event != nullptr) { // resource can decide to ignore that event
@@ -162,7 +187,7 @@ void Reactor::handle_resource_(int fd, uint32_t events)
     }
 
     // Handle action
-    descriptor_resources_lock_.lock();
+    resources_lock_.lock();
     if (!resource->is_bound_to(this))
         return; // somebody removed the resource... hope he knew what he was doing xD
     if (action & DescriptorResource::SUSPEND) {
@@ -171,7 +196,7 @@ void Reactor::handle_resource_(int fd, uint32_t events)
     if (action & DescriptorResource::REMOVE_FROM_REACTOR) {
         remove_resource_unsafe_(resource);
     }
-    descriptor_resources_lock_.unlock();
+    resources_lock_.unlock();
 }
 
 
@@ -204,7 +229,7 @@ void Reactor::remove_listener(std::shared_ptr<EventListener> listener)
 
 void Reactor::remove_resource(std::shared_ptr<DescriptorResource> resource)
 {
-    std::lock_guard lg(descriptor_resources_lock_);
+    std::lock_guard lg(resources_lock_);
     remove_resource_unsafe_(resource);
 }
 
@@ -215,6 +240,47 @@ Reactor::~Reactor()
     close(reactors_pipe_[0]);
     close(reactors_pipe_[1]);
     // RAII in resources will do the rest
+}
+
+
+void Reactor::broadcast_event(std::shared_ptr<Event> event)
+{
+    const std::string &event_name = event->name();
+    // Maybe name too long (writer/reads in packet mode lower than PIPE_BUF are atomic according to manual)
+    if (event_name.length() > EVENT_NAME_MAX)
+        throw std::invalid_argument("Too long name in Reactor::broadcast_event; max=" + std::to_string(EVENT_NAME_MAX));
+    if (event_name != event->name())
+        throw std::invalid_argument("`event_name` and `event->name()` disagree");
+
+    // Check if event name is unused
+    resources_lock_.lock();
+    if (is_internal_name_(event_name))
+        throw std::invalid_argument("Event names prefixed `/Reactor/` are reserved");
+    if (resources_names_.find(event_name) != resources_names_.end())
+        throw std::invalid_argument("Resource with event's name `" + event_name + "` already present");
+    resources_lock_.unlock();
+
+    // Put mapping
+    custom_events_lock_.lock();
+    custom_events_.insert({event_name, event});
+    custom_events_lock_.unlock();
+
+    // Now push notification with pipe
+    if (write(reactors_pipe_[1], event_name.c_str(), event_name.length()) != event_name.length())
+        throw SystemError("Could not write to pipe");
+}
+
+
+bool Reactor::is_internal_name_(const std::string &name)
+{
+    return name.substr(0, 9) == "/Reactor/";
+}
+
+
+void Reactor::handle_internal_event_(const std::string &name)
+{
+    /* Now there is one internal event and ish should be ignored */
+    assert(name == STOP_EVENT_NAME_);
 }
 
 }
