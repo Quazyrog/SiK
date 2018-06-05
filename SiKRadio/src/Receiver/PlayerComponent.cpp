@@ -2,6 +2,8 @@
 #include <Reactor/Reactor.hpp>
 #include "PlayerComponent.hpp"
 
+using namespace Events::Player;
+
 
 
 PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
@@ -28,15 +30,15 @@ void PlayerComponent::play_station(std::string name)
 void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> event)
 {
     if (event->name().substr(0, 16) == "/Lookup/Station/") {
-        auto ev = std::dynamic_pointer_cast<StationEvent>(event);
+        auto ev = std::dynamic_pointer_cast<Events::Lookup::StationEvent>(event);
         handle_station_event_(ev);
     }
 }
 
 
-void PlayerComponent::handle_station_event_(std::shared_ptr<StationEvent> event)
+void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::StationEvent> event)
 {
-    auto bad_ev = std::dynamic_pointer_cast<StationTimedOutEvent>(event);
+    auto bad_ev = std::dynamic_pointer_cast<Events::Lookup::StationTimedOutEvent>(event);
     if (bad_ev != nullptr) {
         // Station removed
         if (bad_ev->station_data().name == station_name_) {

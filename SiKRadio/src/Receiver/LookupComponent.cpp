@@ -1,5 +1,9 @@
 #include <iostream>
 #include "LookupComponent.hpp"
+#include "Events.hpp"
+
+using namespace Events::Lookup;
+
 
 
 namespace {

@@ -9,6 +9,6 @@ This is list of event messages used by receiver:
         /New  -- new station replied
         /AddressChanged  -- known station changed address
         /TimedOut  -- station timed out and should be forgotten
-        /WombatHereFrient -- reply to /Player/WombatLooksForFriends
+        /WombatHereFriend -- reply to /Player/WombatLooksForFriends
 /Player
     /WombatLooksForFriends  -- sent when player wants any station to be broadcasted

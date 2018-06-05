@@ -6,6 +6,7 @@
 #include <Network/Address.hpp>
 #include <Misc.hpp>
 #include "ReceiverMisc.hpp"
+#include "Events.hpp"
 
 
 
@@ -21,7 +22,7 @@ protected:
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
 
-    void handle_station_event_(std::shared_ptr<StationEvent> event);
+    void handle_station_event_(std::shared_ptr<Events::Lookup::StationEvent> event);
 
 public:
     PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor);
