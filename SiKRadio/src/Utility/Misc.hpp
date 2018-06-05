@@ -2,6 +2,7 @@
 #define SIKRADIO_CONFIG_HPP
 
 #include <string>
+#include <Network/Address.hpp>
 
 
 
@@ -45,8 +46,7 @@ struct Params
 struct StationData
 {
     std::string name;
-    std::string mcast_addr;
-    uint16_t port_num;
+    Utility::Network::Address mcast_addr;
 };
 
 

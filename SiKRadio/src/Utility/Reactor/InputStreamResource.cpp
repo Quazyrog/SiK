@@ -1,5 +1,6 @@
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "../Exceptions.hpp"
 #include "InputStreamResource.hpp"
 #include "Reactor.hpp"
@@ -52,12 +53,16 @@ std::shared_ptr<Event> InputStreamResource::generate_event(uint32_t event_mask,
 }
 
 
-size_t InputStreamResource::read(char *buf, const size_t max_len)
+bool InputStreamResource::read(char *buf, const size_t max_len, size_t &rd_len)
 {
     auto result = ::read(fd_, buf, max_len);
-    if (result < 0)
+    if (result < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;
         throw Utility::Exceptions::IOError("read(" + std::to_string(fd_) + ", ...) failed");
-    return static_cast<size_t>(result);
+    }
+    rd_len = static_cast<size_t>(result);
+    return true;
 }
 
 
@@ -76,6 +81,13 @@ InputStreamEvent::InputStreamEvent(InputStreamResource *resource) :
 InputStreamResource *InputStreamEvent::source()
 {
     return source_;
+}
+
+
+void InputStreamResource::make_nonblocking()
+{
+    if(fcntl(fd_, F_SETFL, fcntl(fd_, F_GETFL) | O_NONBLOCK) < 0)
+        throw Utility::Exceptions::SystemError("Cannot switch to non-blocking mode");
 }
 
 

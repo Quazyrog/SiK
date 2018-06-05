@@ -43,16 +43,16 @@ public:
     virtual std::shared_ptr<Event> generate_event(uint32_t event_mask, ResourceAction &action) override;
     // [END] Inherited from DescriptorResource
 
+    void make_nonblocking();
+
     /**
      * Read from the resource
      * @param buf buffer, to where data will be put
      * @param max_len buffer capacity
-     * @return number of bytes read; 0 means EOF
+     * @return bool indicating if there are still data available
      * @throws Utility::Exceptions::IOError on failure
      */
-    size_t read(char *buf, size_t max_len);
-
-    // TODO maybe non-blocking support?
+    bool read(char *buf, size_t max_len, size_t &rd_len);
 };
 
 

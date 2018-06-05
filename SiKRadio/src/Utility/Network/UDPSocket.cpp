@@ -1,6 +1,7 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "../Reactor/Reactor.hpp"
 #include "../Exceptions.hpp"
 #include "UDPSocket.hpp"
@@ -23,22 +24,26 @@ void UDPSocket::bind_address(Address address)
 }
 
 
-size_t UDPSocket::receive(char *buffer, size_t max_len)
+bool UDPSocket::receive(char *buffer, size_t max_len, size_t &rd_len)
 {
     Address a;
-    return receive(buffer, max_len, a);
+    return receive(buffer, max_len, rd_len, a);
 }
 
 
-size_t UDPSocket::receive(char *buffer, size_t max_len, Address &remote_addr)
+bool UDPSocket::receive(char *buffer, size_t max_len, size_t &rd_len, Address &remote_addr)
 {
     sockaddr_in raddr;
     socklen_t raddr_len = sizeof(raddr);
     auto rcv_len = recvfrom(fd_, buffer, max_len, 0, reinterpret_cast<struct sockaddr *>(&raddr), &raddr_len);
-    if (rcv_len < 0)
+    if (rcv_len < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
+            return false;
         throw Utility::Exceptions::IOError("Receive from socket failed");
+    }
     remote_addr = Address(raddr);
-    return static_cast<size_t>(rcv_len);
+    rd_len = static_cast<size_t>(rcv_len);
+    return rcv_len > 0;
 }
 
 

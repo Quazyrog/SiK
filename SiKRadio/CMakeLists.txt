@@ -23,6 +23,7 @@ add_executable(nadajnik ${COMMON_SOURCES} ${TRANSMITTER_SOURCES})
 target_include_directories(nadajnik PUBLIC src/Utility)
 
 set(RECEIVER_SOURCES
+        src/Receiver/LookupComponent.cpp
         src/Receiver/Main.cpp)
 add_executable(odbiornik ${COMMON_SOURCES} ${RECEIVER_SOURCES})
 target_include_directories(odbiornik PUBLIC src/Utility)

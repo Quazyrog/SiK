@@ -17,8 +17,8 @@ public:
     virtual ~UDPSocket();
 
     void bind_address(Address address);
-    size_t receive(char *buffer, size_t max_len, Address &remote_addr);
-    size_t receive(char *buffer, size_t max_len);
+    bool receive(char *buffer, size_t max_len, size_t &rd_len, Address &remote_addr);
+    bool receive(char *buffer, size_t max_len, size_t &rd_len);
     size_t send(const char *data, size_t length, const Address &destination);
 
     void enable_broadcast();
