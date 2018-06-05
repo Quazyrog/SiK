@@ -27,6 +27,7 @@ LookupComponent::LookupComponent(const Utility::Misc::Params &params, Utility::R
     reactor_.add_resource(EVENT_NAME_STATION_GC, std::make_shared<Utility::Reactor::Timer>(20s, 2s));
 
     add_filter_("/Lookup/Internal/.*");
+    add_filter_("/Player/WombatLooksForFriends");
     /* caller should add this object as listener */
 }
 
@@ -43,6 +44,9 @@ void LookupComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
 
     } else if (EVENT_NAME_STATION_GC == event->name()) {
         station_gc_();
+
+    } else if ("/Player/WombatLooksForFriends" == event->name()) {
+        player_wants_station_ = true;
     }
 }
 
@@ -132,12 +136,19 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command)
         } else {
             // Update
             station_it->second.last_reply = now;
+
             if (station_it->second.mcast_addr != addr) {
+                // IP changed
                 auto old = station_it->second.mcast_addr;
                 station_it->second.mcast_addr = addr;
                 std::cerr << "LookupComponent: station '" << station_name << "' changed address form ";
                 std::cerr << old << " to " << station_it->second.mcast_addr << std::endl;
                 reactor_.broadcast_event(std::make_shared<StationAddressChangedEvent>(station_it->second, old));
+
+            } else if (player_wants_station_) {
+                // No serious update, but we found new friend for Wombar
+                player_wants_station_ = false;
+                reactor_.broadcast_event(std::make_shared<WombatHereFriendEvent>(station_it->second));
             }
         }
     }

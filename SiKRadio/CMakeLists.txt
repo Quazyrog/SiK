@@ -25,6 +25,6 @@ target_include_directories(nadajnik PUBLIC src/Utility)
 set(RECEIVER_SOURCES
         src/Receiver/LookupComponent.cpp
         src/Receiver/Main.cpp
-        )
+        src/Receiver/PlayerComponent.cpp)
 add_executable(odbiornik ${COMMON_SOURCES} ${RECEIVER_SOURCES})
 target_include_directories(odbiornik PUBLIC src/Utility)

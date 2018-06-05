@@ -35,9 +35,10 @@ public:
 class NewStationEvent : public StationEvent
 {
 public:
-    NewStationEvent(StationData data):
+    explicit NewStationEvent(StationData data):
             StationEvent("/Lookup/Station/New", data)
     {}
+    virtual ~NewStationEvent() = default;
 };
 
 
@@ -50,6 +51,7 @@ public:
             StationEvent("/Lookup/Station/AddressChanged", data),
             old_address_(std::move(old_address))
     {}
+    virtual ~StationAddressChangedEvent() = default;
 
     const Utility::Network::Address &old_address() const
     {
@@ -66,9 +68,30 @@ public:
 class StationTimedOutEvent : public StationEvent
 {
 public:
-    StationTimedOutEvent(StationData data):
+    explicit StationTimedOutEvent(StationData data):
             StationEvent("/Lookup/Station/TimedOut", data)
     {}
+    virtual ~StationTimedOutEvent() = default;
+};
+
+
+class WombatHereFriendEvent : public StationEvent
+{
+public:
+    explicit WombatHereFriendEvent(StationData data):
+            StationEvent("/Lookup/Station/WombatHereFriend", data)
+    {}
+    virtual ~WombatHereFriendEvent() = default;
+};
+
+
+class ConnectionLostEvent : public Utility::Reactor::Event
+{
+public:
+    ConnectionLostEvent():
+        Event("/Player/WombatLooksForFriends")
+    {}
+    virtual ~ConnectionLostEvent() = default;
 };
 
 

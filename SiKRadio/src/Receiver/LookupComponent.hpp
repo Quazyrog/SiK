@@ -20,6 +20,7 @@ protected:
     Utility::Network::Address discovery_addr_;
 
     std::map<std::string, StationData> stations_;
+    bool player_wants_station_ = false;
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
 

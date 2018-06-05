@@ -6,6 +6,7 @@
 #include <thread>
 #include <csignal>
 #include "LookupComponent.hpp"
+#include "PlayerComponent.hpp"
 
 
 
@@ -18,6 +19,7 @@ Utility::Misc::Params parse_args(int argc, char **argv)
 {
     using namespace boost::program_options;
     Utility::Misc::Params params;
+    params.station_name = "";
 
     // Declare the supported options.
     options_description desc("Allowed options");
@@ -56,6 +58,7 @@ void sigint_handler(int signum)
 
 int main(int argc, char **argv)
 {
+    // Initialization things
     auto params = parse_args(argc, argv);
     reactor = new Utility::Reactor::Reactor();
     signal(SIGINT, sigint_handler);
@@ -64,13 +67,22 @@ int main(int argc, char **argv)
     auto lookup_component = std::make_shared<LookupComponent>(params, *reactor);
     reactor->add_listener(lookup_component);
 
+    // Player component
+    auto player_component = std::make_shared<PlayerComponent>(params, *reactor);
+    if (!params.station_name.empty())
+        player_component->play_station(params.station_name);
+    reactor->add_listener(player_component);
+
     // Main loops
     std::thread lookup_component_thread{[lookup_component](){lookup_component->operator()();}};
+    std::thread player_component_thread{[player_component](){player_component->operator()();}};
     reactor->operator()();
 
     // Shut down
     lookup_component->stop();
+    player_component->stop();
     lookup_component_thread.join();
+    player_component_thread.join();
 
     return 0;
 }

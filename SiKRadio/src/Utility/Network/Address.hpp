@@ -28,6 +28,10 @@ public:
 
     bool operator!=(const Address &other) const;
     bool operator==(const Address &other) const;
+    bool empty() const
+    {
+        return (init_flag_ & 2) == 0;
+    }
 
     void host(std::string host);
     std::string host() const;
