@@ -3,9 +3,9 @@
 
 
 namespace {
-const std::string EVENT_NAME_LOOKUP_TIME = "/Lookup/LookupTime";
-const std::string EVENT_NAME_STATION_GC = "/Lookup/StationsGCTime";
-const std::string EVENT_NAME_SOCKET = "/Lookup/Socket";
+const std::string EVENT_NAME_LOOKUP_TIME = "/Lookup/Internal/LookupTime";
+const std::string EVENT_NAME_STATION_GC = "/Lookup/Internal/StationsGCTime";
+const std::string EVENT_NAME_SOCKET = "/Lookup/Internal/Socket";
 }
 
 
@@ -26,7 +26,7 @@ LookupComponent::LookupComponent(const Utility::Misc::Params &params, Utility::R
     reactor_.add_resource(EVENT_NAME_LOOKUP_TIME, std::make_shared<Utility::Reactor::Timer>(0s, 5s));
     reactor_.add_resource(EVENT_NAME_STATION_GC, std::make_shared<Utility::Reactor::Timer>(20s, 2s));
 
-    add_filter_("/Lookup/.*");
+    add_filter_("/Lookup/Internal/.*");
     /* caller should add this object as listener */
 }
 

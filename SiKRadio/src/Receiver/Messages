@@ -1,0 +1,11 @@
+This is list of event messages used by receiver:
+
+/Lookup
+    /Internal
+        /LookupTime  -- time to broadcast new lookup
+        /StationsGCTime -- timer for calling stations garbage collector that removes idle stations
+        /Socket  -- control data available
+    /Station
+        /New  -- new station replied
+        /AddressChanged  -- known station changed address
+        /TimedOut  -- station timed out and should be forgotten
