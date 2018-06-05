@@ -11,4 +11,6 @@ This is list of event messages used by receiver:
         /TimedOut  -- station timed out and should be forgotten
         /WombatHereFriend -- reply to /Player/WombatLooksForFriends
 /Player
+    /Internal
+        /DataAvailable  -- from data socket
     /WombatLooksForFriends  -- sent when player wants any station to be broadcasted

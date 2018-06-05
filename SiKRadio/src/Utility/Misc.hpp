@@ -43,14 +43,6 @@ struct Params
     Params();
 };
 
-
-struct AutioDataPacket
-{
-    uint64_t session_id;
-    uint64_t first_byte_num;
-    uint8_t audio_data[];
-};
-
 }
 
 #endif //SIKRADIO_CONFIG_HPP

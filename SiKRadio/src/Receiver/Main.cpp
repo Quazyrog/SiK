@@ -30,7 +30,7 @@ Utility::Misc::Params parse_args(int argc, char **argv)
             ("ui-port,U", value(&(params.ui_port)), "telnet-cli port (tcp)")
             ("bsize,b", value(&(params.bsize)), "buffer size (bytes)")
             ("rtime,R", value(&(params.rtime)), "retransmission wait time (milliseconds)")
-            ("station-name,n", value(&(params.discover_addr)), "name of station to play");
+            ("station-name,n", value(&(params.station_name)), "name of station to play");
 
     variables_map vm;
     store(parse_command_line(argc, argv, desc), vm);
