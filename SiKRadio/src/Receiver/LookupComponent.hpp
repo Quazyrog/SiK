@@ -6,6 +6,7 @@
 #include <Reactor/Reactor.hpp>
 #include <Network/UDPSocket.hpp>
 #include <Reactor/Timer.hpp>
+#include "ReceiverMisc.hpp"
 
 
 
@@ -18,13 +19,15 @@ protected:
 
     Utility::Network::Address discovery_addr_;
 
-    std::map<std::chrono::system_clock::time_point, Utility::Misc::StationData> active_stations_;
+    std::map<std::string, StationData> stations_;
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
 
     void receive_ctrl_command_();
     void send_lookup_();
     void execute_ctrl_command_(std::stringstream command);
+
+    void station_gc_();
 
 public:
     explicit LookupComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor);

@@ -97,4 +97,22 @@ Address::operator std::string() const
     return host() + ":" + std::to_string(port());
 }
 
+
+bool Address::operator!=(const Address &other) const
+{
+    return !(*this == other);
+}
+
+
+bool Address::operator==(const Address &other) const
+{
+    return other.port() == port() && other.host() == host() && other.init_flag_ == init_flag_;
+}
+
+
+std::ostream &operator<<(std::ostream &ostream, const Address &addr)
+{
+    return (ostream << static_cast<std::string>(addr));
+}
+
 }

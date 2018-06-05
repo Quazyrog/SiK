@@ -26,6 +26,9 @@ public:
     explicit Address(const std::string &host);
     Address(const std::string &host, uint16_t port);
 
+    bool operator!=(const Address &other) const;
+    bool operator==(const Address &other) const;
+
     void host(std::string host);
     std::string host() const;
     void port(uint16_t port);
@@ -34,6 +37,8 @@ public:
     explicit operator std::string() const;
     explicit operator sockaddr() const;
 };
+
+std::ostream &operator<<(std::ostream &ostream, const Address &addr);
 
 }
 

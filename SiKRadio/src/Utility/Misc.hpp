@@ -3,6 +3,7 @@
 
 #include <string>
 #include <Network/Address.hpp>
+#include <chrono>
 
 
 
@@ -40,13 +41,6 @@ struct Params
      * Set default values.
      */
     Params();
-};
-
-
-struct StationData
-{
-    std::string name;
-    Utility::Network::Address mcast_addr;
 };
 
 
