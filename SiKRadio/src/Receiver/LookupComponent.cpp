@@ -95,6 +95,9 @@ void LookupComponent::receive_ctrl_command_()
             }
         }
     }
+
+    delete [] read_buffer;
+    delete [] cmd_buffer;
 }
 
 
