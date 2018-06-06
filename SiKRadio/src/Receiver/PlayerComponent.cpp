@@ -2,6 +2,7 @@
 #include <cassert>
 #include <Reactor/Reactor.hpp>
 #include <Exceptions.hpp>
+#include <Reactor/Timer.hpp>
 #include "PlayerComponent.hpp"
 
 using namespace Events::Player;
@@ -15,6 +16,8 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
     reactor_(reactor),
     buffer_(params.bsize)
 {
+    using namespace std::chrono_literals;
+
     // Socket
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
     socket_->make_nonblocking();
@@ -24,6 +27,10 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
     stdout_ = Utility::Reactor::StreamResource::stdout_resource();
     stdout_->make_nonblocking();
     reactor_.add_resource("/Player/Internal/StdoutReady", stdout_);
+
+    timer_ = std::make_shared<Utility::Reactor::Timer>(10'000, params.rtime * 1'000);
+    timer_->stop();
+    reactor_.add_resource("/Player/Internal/Retransmit", timer_);
 
     // Filters
     add_filter_("/Player/Internal/.*");
@@ -54,6 +61,10 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
     } else if ("/Player/Internal/StdoutReady" == event->name()) {
         stdout_ready_ = true;
         try_write_();
+
+    } else if ("/Player/Internal/Retransmit" == event->name()) {
+        std::cerr << "PlayerComponent: wants retransmission from " << station_ctrl_addr_ << std::endl;
+        reactor_.broadcast_event(std::make_shared<RetransmissionEvent>(buffer_.retransmit_list(), station_ctrl_addr_));
     }
 }
 
@@ -82,6 +93,7 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
             // It is our station that we want to update
             if (!station_address_.empty())
                 socket_->leave_multicast(station_address_);
+            station_ctrl_addr_ = event->station_data().stat_addr;
 
             // Now try to connect to station
             try {
@@ -125,19 +137,21 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
         packet.audio_data = buffer + metadata_len;
         if (state_ == WAIT_FIRST_DATA) {
             state_ = WAIT_BUFFER;
+            timer_->start();
             try {
                 buffer_.reset(packet.first_byte_num, rd_len - metadata_len);
             } catch (std::invalid_argument &err) {
                 std::cerr << "PlayerComponent: cannot reset buffer: " << err.what() << std::endl;
-                continue;
+                goto HELL;
             }
         }
         try {
             buffer_.put(packet);
         } catch (Utility::BufferStorageError &err) {
             std::cerr << "PlayerComponent: cannot store buffer data: " << err.what() << std::endl;
-            continue;
+            goto HELL;
         }
+HELL:
         try_write_();
     } while (read_ready);
 
@@ -158,6 +172,7 @@ void PlayerComponent::try_write_()
 
     Utility::AudioPacket packet;
     packet.audio_data = new char [buffer_.packet_data_size()];
+    std::cerr << "PlayerComponent: stdouting data" << std::endl;
 
     try {
         while (stdout_ready_) {

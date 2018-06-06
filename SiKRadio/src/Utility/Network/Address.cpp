@@ -106,7 +106,7 @@ bool Address::operator!=(const Address &other) const
 
 bool Address::operator==(const Address &other) const
 {
-    return other.port() == port() && other.host() == host() && other.init_flag_ == init_flag_;
+    return other.init_flag_ == init_flag_ && other.port() == port() && other.host() == host();
 }
 
 

@@ -55,6 +55,9 @@ public:
     Timer(Timer &&) = default;
     ~Timer();
 
+    void stop();
+    void start();
+
     virtual int descriptor() const
     {
         return fd_;

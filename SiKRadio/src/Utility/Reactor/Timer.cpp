@@ -66,6 +66,20 @@ std::shared_ptr<Event> Timer::generate_event(uint32_t, DescriptorResource::Resou
 }
 
 
+void Timer::stop()
+{
+    val_ = 0;
+    sync_spec_();
+}
+
+
+void Timer::start()
+{
+    val_ = 1;
+    sync_spec_();
+}
+
+
 TimerEvent::TimerEvent(const std::string &name, uint64_t times_passed):
     Event(name),
     times_passed_(times_passed)

@@ -11,6 +11,7 @@ struct StationData
     std::chrono::system_clock::time_point last_reply;
     std::string name;
     Utility::Network::Address mcast_addr;
+    Utility::Network::Address stat_addr;
 };
 
 

@@ -19,10 +19,12 @@ protected:
 
     Utility::Reactor::Reactor &reactor_;
     std::shared_ptr<Utility::Network::UDPSocket> socket_;
+    std::shared_ptr<Utility::Reactor::Timer> timer_;
 
-    std::string station_name_;
+    std::string station_name_; // fixme just station data
     Utility::Network::Address local_address_;
     Utility::Network::Address station_address_;
+    Utility::Network::Address station_ctrl_addr_;
 
     std::shared_ptr<Utility::Reactor::OStreamResource> stdout_;
     Utility::AudioPacketBuffer buffer_;

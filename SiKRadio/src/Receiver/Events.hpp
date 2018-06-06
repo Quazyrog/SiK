@@ -1,6 +1,7 @@
 #ifndef SIKRADIO_EVENTS_HPP
 #define SIKRADIO_EVENTS_HPP
 
+#include <forward_list>
 #include <Reactor/Event.hpp>
 #include "ReceiverMisc.hpp"
 
@@ -101,8 +102,33 @@ public:
             Event("/Player/WombatLooksForFriends")
     {}
 
-
     virtual ~ConnectionLostEvent() = default;
+};
+
+
+class RetransmissionEvent : public Utility::Reactor::Event
+{
+    std::forward_list<uint64_t> list_;
+    Utility::Network::Address addr_;
+
+public:
+    RetransmissionEvent(std::forward_list<uint64_t> retr, Utility::Network::Address radio_addr):
+        Event("/Player/Retransmission"),
+        list_(std::move(retr)),
+        addr_(radio_addr)
+    {}
+
+    const std::forward_list<uint64_t> &packets_list() const
+    {
+        return list_;
+    }
+
+    const Utility::Network::Address &station_address() const
+    {
+        return addr_;
+    }
+
+    virtual ~RetransmissionEvent() = default;
 };
 
 }

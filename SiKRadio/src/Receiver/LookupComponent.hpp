@@ -26,7 +26,7 @@ protected:
 
     void receive_ctrl_command_();
     void send_lookup_();
-    void execute_ctrl_command_(std::stringstream command);
+    void execute_ctrl_command_(std::stringstream command, Utility::Network::Address from);
 
     void station_gc_();
 

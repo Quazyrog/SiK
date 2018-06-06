@@ -32,6 +32,7 @@ LookupComponent::LookupComponent(const Utility::Misc::Params &params, Utility::R
 
     add_filter_("/Lookup/Internal/.*");
     add_filter_("/Player/WombatLooksForFriends");
+    add_filter_("/Player/Retransmission");
     /* caller should add this object as listener */
 }
 
@@ -51,6 +52,16 @@ void LookupComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
 
     } else if ("/Player/WombatLooksForFriends" == event->name()) {
         player_wants_station_ = true;
+    } else if ("/Player/Retransmission" == event->name()) {
+        auto ev = std::dynamic_pointer_cast<Events::Player::RetransmissionEvent>(event);
+        std::stringstream ss;
+        ss << "LOUDER_PLEASE ";
+        for (auto pn : ev->packets_list())
+            ss << pn << ",";
+        auto str = ss.str();
+        str[str.length() - 1] = '\n';
+        std::cerr << "LookupComponent: to " << ev->station_address() << " send " << str;
+        ctrl_socket_->send(str.c_str(), str.length(), ev->station_address());
     }
 }
 
@@ -66,42 +77,21 @@ void LookupComponent::send_lookup_()
 void LookupComponent::receive_ctrl_command_()
 {
     const size_t MAX_LEN = 1024;
-    size_t rd_len, cmd_buffer_index = 0;
-    bool drop_eol = false;
-
+    size_t rd_len;
     auto read_buffer = new char [MAX_LEN];
-    auto cmd_buffer = new char [MAX_LEN];
     memset(read_buffer, 0, MAX_LEN);
-    memset(cmd_buffer, 0, MAX_LEN);
+    Utility::Network::Address from;
 
-    while (ctrl_socket_->read(read_buffer, MAX_LEN, rd_len)) {
-        for (size_t read_buffer_index = 0; read_buffer_index < rd_len; ++read_buffer_index) {
-            if (read_buffer[read_buffer_index] == '\n') {
-                // Command complete: send it for parser
-                cmd_buffer[cmd_buffer_index] = 0;
-                if (!drop_eol)
-                    execute_ctrl_command_(std::stringstream(cmd_buffer));
-                else
-                    std::cerr << "LookupComponent: was too long; dropping" << std::endl;
-                drop_eol = false;
-                cmd_buffer_index = 0;
-
-            } else {
-                // Feed command buffer with next char
-                drop_eol = (cmd_buffer_index == MAX_LEN - 1); /* we drop command if it already 1023 chars */
-                if (drop_eol)
-                    continue; /* [for] */
-                cmd_buffer[cmd_buffer_index++] = read_buffer[read_buffer_index];
-            }
-        }
+    while (ctrl_socket_->receive(read_buffer, MAX_LEN, rd_len, from)) {
+        read_buffer[rd_len] = 0;
+        execute_ctrl_command_(std::stringstream(read_buffer), from);
     }
 
     delete [] read_buffer;
-    delete [] cmd_buffer;
 }
 
 
-void LookupComponent::execute_ctrl_command_(std::stringstream command)
+void LookupComponent::execute_ctrl_command_(std::stringstream command, Utility::Network::Address from)
 {
     std::string cmdname;
     command >> cmdname;
@@ -135,8 +125,9 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command)
         auto station_it = stations_.find(station_name);
         if (station_it == stations_.end()) {
             // Add
-            StationData data = {now, station_name, addr};
-            std::cerr << "LookupComponent: new station '" << station_name << "' with address " << addr << std::endl;
+            StationData data = {now, station_name, addr, from};
+            std::cerr << "LookupComponent: new station '" << station_name << "' with mcast-address " << addr;
+            std::cerr << " and ctrl-address " << from << std::endl;
             reactor_.broadcast_event(std::make_shared<NewStationEvent>(data));
             stations_[station_name] = data;
 
@@ -144,10 +135,11 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command)
             // Update
             station_it->second.last_reply = now;
 
-            if (station_it->second.mcast_addr != addr) {
+            if (station_it->second.mcast_addr != addr || station_it->second.stat_addr != from) {
                 // IP changed
                 auto old = station_it->second.mcast_addr;
                 station_it->second.mcast_addr = addr;
+                station_it->second.stat_addr = from;
                 std::cerr << "LookupComponent: station '" << station_name << "' changed address form ";
                 std::cerr << old << " to " << station_it->second.mcast_addr << std::endl;
                 reactor_.broadcast_event(std::make_shared<StationAddressChangedEvent>(station_it->second, old));

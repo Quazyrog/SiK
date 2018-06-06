@@ -34,6 +34,8 @@ void AudioPacketBuffer::reset(uint64_t byte0, uint64_t packet_data_size)
     metatable_ = new bool [capacity_];
     std::memset(metatable_, 0, capacity_);
     was_reset_ = true;
+    has_magic_ = false;
+    max_abs_num_ = head_abs_index_;
 }
 
 
@@ -44,13 +46,20 @@ void AudioPacketBuffer::put(AudioPacket &packet)
     // Check if slot is free
     auto index_offset = ((packet.first_byte_num - byte0_offset_) / packet_size_) % capacity_;
     auto abs_index = packet.first_byte_num / packet_size_;
-//    std::cerr << index_offset << "  " << abs_index << " :: " << packet.first_byte_num << std::endl;
-    if (abs_index < head_abs_index_ || abs_index - head_abs_index_ >= capacity_ || metatable_[index_offset])
-        throw BufferStorageError("Required slot is occupied (or too far from head)");
+//    std::cerr << index_offset << "|" << head_abs_index_ << "  " << abs_index << " :: " << packet.first_byte_num << std::endl;
+    if (abs_index < head_abs_index_)
+        throw BufferStorageError("Required slot is before head");
+    if (abs_index - head_abs_index_ >= capacity_)
+        throw BufferStorageError("Required slot is too far from head");
+    if (metatable_[index_offset])
+        throw BufferStorageError("Required slot is occupied or too far from head");
 
     // Store the packet
     metatable_[index_offset] = true;
     std::memcpy(data_ + index_offset * packet_size_, packet.audio_data, packet_size_);
+    max_abs_num_ = std::max(abs_index, max_abs_num_);
+    if (index_offset >= 3 * capacity_ / 4)
+        has_magic_ = true;
 }
 
 
@@ -93,7 +102,19 @@ bool AudioPacketBuffer::is_filled_with_magic() const
 {
     if (!was_reset_)
         throw std::logic_error("Buffer needs to be reset firstly");
-    return metatable_[(head_offset_ + 3 * capacity_ / 4) % capacity_];
+    return has_magic_;
+}
+
+
+std::forward_list<uint64_t> AudioPacketBuffer::retransmit_list() const
+{
+    auto i = head_offset_, absi = head_abs_index_;
+    std::forward_list<uint64_t> result;
+    for (; absi <= max_abs_num_; ++absi, i = (i + 1) % capacity_) {
+        if (!metatable_[i])
+            result.push_front(absi);
+    }
+    return result;
 }
 
 }
