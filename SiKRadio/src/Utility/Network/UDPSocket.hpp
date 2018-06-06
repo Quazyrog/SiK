@@ -1,7 +1,7 @@
 #ifndef SIKRADIO_UDPSOCKET_HPP
 #define SIKRADIO_UDPSOCKET_HPP
 
-#include <Reactor/InputStreamResource.hpp>
+#include <Reactor/StreamResource.hpp>
 #include "../Reactor/DescriptorResource.hpp"
 #include "../Reactor/Event.hpp"
 #include "Address.hpp"
@@ -10,7 +10,7 @@
 
 namespace Utility::Network {
 
-class UDPSocket : public Utility::Reactor::InputStreamResource
+class UDPSocket : public Utility::Reactor::IStreamResource
 {
 public:
     UDPSocket();

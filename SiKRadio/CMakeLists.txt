@@ -6,13 +6,14 @@ find_package(Boost COMPONENTS program_options log REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 
 set(COMMON_SOURCES
+        src/Utility/AudioPacketBuffer.cpp
         src/Utility/Misc.cpp
         src/Utility/Network/Address.cpp
         src/Utility/Network/UDPSocket.cpp
         src/Utility/Reactor/DescriptorResource.cpp
         src/Utility/Reactor/Event.cpp
         src/Utility/Reactor/EventListener.cpp
-        src/Utility/Reactor/InputStreamResource.cpp
+        src/Utility/Reactor/StreamResource.cpp
         src/Utility/Reactor/Reactor.cpp
         src/Utility/Reactor/Timer.cpp)
 link_libraries(-lpthread ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LIBRARIES})

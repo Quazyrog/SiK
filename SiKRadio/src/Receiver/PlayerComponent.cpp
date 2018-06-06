@@ -7,7 +7,8 @@ using namespace Events::Player;
 
 
 PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
-    reactor_(reactor)
+    reactor_(reactor),
+    buffer_(params.bsize, params.psize)
 {
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
     socket_->make_nonblocking();
@@ -23,7 +24,7 @@ void PlayerComponent::play_station(std::string name)
 {
     if (name.empty() || name.length() > 64)
         throw std::invalid_argument("Invalid station name");
-    wait_for_buffer_to_fill_ = true;
+    state_ = WAIT_FIRST_DATA;
     station_name_ = name;
     std::cerr << "PlayerComponent: now will play '" << name << "'" << std::endl;
 }
@@ -36,7 +37,7 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
         handle_station_event_(ev);
 
     } else if ("/Player/Internal/DataAvailable" == event->name()) {
-        auto ev = std::dynamic_pointer_cast<Utility::Reactor::InputStreamEvent>(event);
+        auto ev = std::dynamic_pointer_cast<Utility::Reactor::StreamEvent>(event);
         handle_data_(ev);
     }
 }
@@ -75,7 +76,7 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 }
 
 
-void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::InputStreamEvent> event)
+void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event)
 {
     const size_t BUFFER_LENGTH = 1024;
     char *buffer = new char [BUFFER_LENGTH];

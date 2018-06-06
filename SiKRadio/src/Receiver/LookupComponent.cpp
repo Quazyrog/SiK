@@ -42,7 +42,7 @@ void LookupComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
         send_lookup_();
 
     } else if (EVENT_NAME_SOCKET == event->name()) {
-        auto ev = std::dynamic_pointer_cast<Utility::Reactor::InputStreamEvent>(event);
+        auto ev = std::dynamic_pointer_cast<Utility::Reactor::StreamEvent>(event);
         receive_ctrl_command_();
         ev->reenable_source();
 
