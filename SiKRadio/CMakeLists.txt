@@ -19,6 +19,7 @@ set(COMMON_SOURCES
 link_libraries(-lpthread ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LIBRARIES})
 
 set(TRANSMITTER_SOURCES
+        src/Transmitter/ControlComponent.cpp
         src/Transmitter/Main.cpp)
 add_executable(nadajnik ${COMMON_SOURCES} ${TRANSMITTER_SOURCES})
 target_include_directories(nadajnik PUBLIC src/Utility)
