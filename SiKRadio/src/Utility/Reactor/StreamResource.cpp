@@ -95,6 +95,7 @@ bool IStreamResource::read(char *buf, const size_t max_len, size_t &rd_len)
 {
     auto result = ::read(fd_, buf, max_len);
     if (result < 0) {
+        rd_len = 0;
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return false;
         throw Utility::Exceptions::IOError("read(" + std::to_string(fd_) + ", ...) failed");
@@ -119,6 +120,7 @@ bool OStreamResource::write(char *data, size_t len, size_t &wr_len)
 {
     auto result = ::write(fd_, data, len);
     if (result < 0) {
+        wr_len = 0;
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return false;
         throw Utility::Exceptions::IOError("write(" + std::to_string(fd_) + ", ...) failed");

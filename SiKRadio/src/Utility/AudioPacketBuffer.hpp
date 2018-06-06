@@ -33,23 +33,19 @@ class AudioPacketBuffer
 {
     char *data_ = nullptr;
     bool *metatable_ = nullptr;
-    uint64_t capacity_, packet_size_;
+    uint64_t alloc_size_, capacity_, packet_size_;
     int64_t head_offset_, head_abs_index_, byte0_offset_;
     bool was_reset_ = false;
 
 public:
-    AudioPacketBuffer(uint64_t buffer_size, uint64_t package_data_size);
+    AudioPacketBuffer(uint64_t buffer_size);
     ~AudioPacketBuffer();
 
-    uint64_t capacity() const;
     uint64_t packet_data_size() const;
-    uint64_t packet_size() const;
 
-    void reset(uint64_t byte0);
+    void reset(uint64_t byte0, uint64_t packet_data_size);
     void clear();
-    bool was_reset() const;
     void put(AudioPacket &packet);
-    bool has_by_offset(uint64_t first_byte_num);
     bool is_filled_with_magic() const;
 
     AudioPacketBuffer &operator>>(AudioPacket &dst);

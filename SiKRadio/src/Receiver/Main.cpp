@@ -29,7 +29,6 @@ Utility::Misc::Params parse_args(int argc, char **argv)
             ("ctrl-port,C", value(&(params.ctrl_port)), "control port (udp)")
             ("ui-port,U", value(&(params.ui_port)), "telnet-cli port (tcp)")
             ("bsize,b", value(&(params.bsize)), "buffer size (bytes)")
-            ("psize,p", value(&(params.psize)), "package (bytes)")
             ("rtime,R", value(&(params.rtime)), "retransmission wait time (milliseconds)")
             ("station-name,n", value(&(params.station_name)), "name of station to play");
 

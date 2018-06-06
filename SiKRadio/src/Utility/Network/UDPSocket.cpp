@@ -46,6 +46,7 @@ bool UDPSocket::receive(char *buffer, size_t max_len, size_t &rd_len, Address &r
     socklen_t raddr_len = sizeof(raddr);
     auto rcv_len = recvfrom(fd_, buffer, max_len, 0, reinterpret_cast<struct sockaddr *>(&raddr), &raddr_len);
     if (rcv_len < 0) {
+        rcv_len = 0;
         if (errno == EAGAIN || errno == EWOULDBLOCK)
             return false;
         throw Utility::Exceptions::IOError("Receive from socket failed");

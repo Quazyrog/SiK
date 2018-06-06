@@ -6,11 +6,14 @@
 
 using namespace Events::Player;
 
+namespace {
+const size_t MAX_PACKET_SIZE = 256 * 256;
+}
 
 
 PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
     reactor_(reactor),
-    buffer_(params.bsize, params.psize)
+    buffer_(params.bsize)
 {
     // Socket
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
@@ -106,36 +109,34 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
     using Utility::AudioPacket;
 
     const size_t metadata_len = offsetof(Utility::AudioPacket, audio_data);
-    char *buffer = new char [buffer_.packet_size()];
+    char *buffer = new char [MAX_PACKET_SIZE];
     bool read_ready = true;
 
     do {
         size_t rd_len = 0;
         AudioPacket packet;
-        read_ready = socket_->read(buffer, buffer_.packet_size(), rd_len);
-        if (rd_len != buffer_.packet_size()) {
-            if (read_ready)
-                std::cerr << "PlayerComponent: Invalid packet size: dtop it!" << std::endl;
+        read_ready = socket_->read(buffer, MAX_PACKET_SIZE, rd_len);
+        if (rd_len == 0)
             continue;
-        }
         packet.session_id = Utility::Misc::hton<uint64_t>(
                 *reinterpret_cast<uint64_t*>(buffer + offsetof(AudioPacket, session_id)));
         packet.first_byte_num = Utility::Misc::hton<uint64_t>(
                 *reinterpret_cast<uint64_t*>(buffer + offsetof(AudioPacket, first_byte_num)));
-        packet.audio_data = buffer + offsetof(AudioPacket, audio_data);
-        if (!buffer_.was_reset()) {
-            assert(state_ == WAIT_FIRST_DATA);
+        packet.audio_data = buffer + metadata_len;
+        if (state_ == WAIT_FIRST_DATA) {
             state_ = WAIT_BUFFER;
             try {
-                buffer_.reset(packet.first_byte_num);
+                buffer_.reset(packet.first_byte_num, rd_len - metadata_len);
             } catch (std::invalid_argument &err) {
                 std::cerr << "PlayerComponent: cannot reset buffer: " << err.what() << std::endl;
+                continue;
             }
         }
         try {
             buffer_.put(packet);
         } catch (Utility::BufferStorageError &err) {
             std::cerr << "PlayerComponent: cannot store buffer data: " << err.what() << std::endl;
+            continue;
         }
         try_write_();
     } while (read_ready);
