@@ -28,7 +28,7 @@ class Reactor
     /// epoll object id
     int epoll_ = -1;
     /// pipe used to boardcast custom events
-    int reactors_pipe_[2];
+    int reactors_pipe_[2] = {-1};
 
     /// Guards access to resources mappings
     std::mutex resources_lock_;

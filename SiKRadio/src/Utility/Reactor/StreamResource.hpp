@@ -4,7 +4,7 @@
 #include <memory>
 #include <atomic>
 #include "DescriptorResource.hpp"
-
+#include <iostream>
 
 
 namespace Utility::Reactor {
@@ -15,7 +15,7 @@ namespace Utility::Reactor {
  * Resource's event handling for this instance is suspended after an event occurs, so you need to reenable it after
  * data are read.
  */
-class StreamResource : public DescriptorResource
+class StreamResource : public virtual DescriptorResource
 {
 protected:
     /// File descriptor
@@ -87,7 +87,7 @@ class OStreamResource : virtual public StreamResource
     friend class StreamResource;
 
 protected:
-    explicit OStreamResource() = default;
+    OStreamResource() = default;
     /**
      * Initialise new resource assigned to given file descriptor
      * @param fd resource's file descriptor
@@ -96,7 +96,7 @@ protected:
     virtual ~OStreamResource() = default;
 
 public:
-    // Inherited from DescriptorResource
+    // Inherited from DvirtualescriptorResource
     uint32_t event_mask() const override;
     // [END] Inherited from DescriptorResource
 

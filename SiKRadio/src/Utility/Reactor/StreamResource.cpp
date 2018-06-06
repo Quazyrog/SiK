@@ -1,6 +1,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <iostream>
 #include "../Exceptions.hpp"
 #include "StreamResource.hpp"
 #include "Reactor.hpp"
@@ -10,20 +11,23 @@
 namespace Utility::Reactor {
 
 namespace {
-class StdinResource : public IStreamResource
+class StdinResource : public virtual IStreamResource
 {
 public:
     StdinResource():
+        StreamResource(0),
         IStreamResource(0)
     {}
     virtual ~StdinResource() = default;
 };
 
-class StdoutResource : public OStreamResource
+
+class StdoutResource : public virtual OStreamResource
 {
 public:
     StdoutResource():
-            OStreamResource(0)
+        StreamResource(1),
+        OStreamResource(1)
     {}
     virtual ~StdoutResource() = default;
 };
@@ -38,17 +42,19 @@ std::shared_ptr<class IStreamResource> StreamResource::stdin_resource()
 
 std::shared_ptr<class OStreamResource> StreamResource::stdout_resource()
 {
-    return std::shared_ptr<StdoutResource >();
+    return std::make_shared<StdoutResource>();
 }
 
 
-StreamResource::StreamResource(int fd) :
+StreamResource::StreamResource(int fd):
         fd_(fd)
 {}
 
 
 void StreamResource::make_nonblocking()
 {
+    if (fd_ == 0)
+        std::cerr << ("\e[1;33m" + std::to_string(fd_) + "\e[0;0m") << std::endl;
     if (fcntl(fd_, F_SETFL, fcntl(fd_, F_GETFL) | O_NONBLOCK) < 0)
         throw Utility::Exceptions::SystemError("Cannot switch to non-blocking mode");
 }
@@ -101,7 +107,7 @@ bool IStreamResource::read(char *buf, const size_t max_len, size_t &rd_len)
 
 
 OStreamResource::OStreamResource(int fd):
-        StreamResource(fd)
+    StreamResource(fd)
 {}
 
 

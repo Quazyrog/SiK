@@ -27,7 +27,8 @@ Reactor::Reactor()
     }
 
     // ...and add it to poll
-    epoll_event ev;
+    epoll_event ev{};
+    std::memset(&ev, 0, sizeof(ev));
     ev.events = EPOLLIN;
     ev.data.fd = reactors_pipe_[0];
     if (epoll_ctl(epoll_, EPOLL_CTL_ADD, reactors_pipe_[0], &ev) != 0) {
@@ -53,7 +54,8 @@ void Reactor::add_resource(const std::string &event_name, std::shared_ptr<Descri
     resource->bind_(this, event_name);
 
     // Add to epoll
-    epoll_event ev;
+    epoll_event ev{};
+    std::memset(&ev, 0, sizeof(ev));
     ev.events = resource->event_mask();
     ev.data.fd = resource->descriptor();
     if (epoll_ctl(epoll_, EPOLL_CTL_ADD, resource->descriptor(), &ev) != 0) {
@@ -73,7 +75,8 @@ void Reactor::operator()()
 
     while (running_) {
         // Wait fot event
-        epoll_event ev;
+        epoll_event ev{};
+        std::memset(&ev, 0, sizeof(ev));
         epoll_wait(epoll_, &ev, 1, -1);
 
         if (!running_)
@@ -117,7 +120,8 @@ void Reactor::change_event_mask_(const DescriptorResource *resource, uint32_t ne
     assert(it->second.get() == resource);
 
     // Now change mask
-    epoll_event ev;
+    epoll_event ev{};
+    std::memset(&ev, 0, sizeof(ev));
     ev.events = new_mask;
     ev.data.fd = resource->descriptor();
     if (epoll_ctl(epoll_, EPOLL_CTL_MOD, resource->descriptor(), &ev) != 0)
@@ -146,7 +150,7 @@ void Reactor::remove_resource_unsafe_(std::shared_ptr<DescriptorResource> resour
 void Reactor::handle_pipe_()
 {
     // Read event name
-    char *buffer = new char[EVENT_NAME_MAX + 1];
+    auto *buffer = new char[EVENT_NAME_MAX + 1];
     std::memset(buffer, 0, EVENT_NAME_MAX + 1);
     /* pipe is in packet (O_DIRECT) mode, thus it will read entire name and only entire name*/
     read(reactors_pipe_[0], buffer, EVENT_NAME_MAX);
