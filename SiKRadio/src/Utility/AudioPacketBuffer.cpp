@@ -29,11 +29,14 @@ void AudioPacketBuffer::reset(uint64_t byte0)
     head_offset_ = 0;
     head_abs_index_ = byte0 / packet_size_;
     std::memset(metatable_, 0, capacity_);
+    was_reset_ = true;
 }
 
 
 bool AudioPacketBuffer::has_by_offset(uint64_t first_byte_num)
 {
+    if (!was_reset_)
+        throw std::logic_error("Buffer needs to be reset firstly");
     if (first_byte_num % packet_size_ != 0)
         throw std::invalid_argument("Invalid packet first byte number " + std::to_string(first_byte_num)
                                     + " for packet size " + std::to_string(packet_size_));
@@ -50,6 +53,8 @@ bool AudioPacketBuffer::has_by_offset(uint64_t first_byte_num)
 
 void AudioPacketBuffer::put(AudioPacket &packet)
 {
+    if (!was_reset_)
+        throw std::logic_error("Buffer needs to be reset firstly");
     // Check if slot is free
     if (has_by_offset(packet.first_byte_num))
         throw BufferStorageError("Required slot is occupied (or too far from head)");
@@ -63,6 +68,8 @@ void AudioPacketBuffer::put(AudioPacket &packet)
 
 AudioPacketBuffer &AudioPacketBuffer::operator>>(AudioPacket &dst)
 {
+    if (!was_reset_)
+        throw std::logic_error("Buffer needs to be reset firstly");
     // Check availability and mark slot as unused
     if (!has_by_offset(dst.first_byte_num))
         throw BufferStorageError("No data available");
@@ -77,6 +84,42 @@ AudioPacketBuffer &AudioPacketBuffer::operator>>(AudioPacket &dst)
     head_offset_ = (head_offset_ + 1) % capacity_;
 
     return *this;
+}
+
+
+uint64_t AudioPacketBuffer::capacity() const
+{
+    return capacity_;
+}
+
+
+uint64_t AudioPacketBuffer::packet_data_size() const
+{
+    return packet_size_;
+}
+
+
+uint64_t AudioPacketBuffer::packet_size() const
+{
+    return packet_size_ + sizeof(AudioPacket) - sizeof(char *);
+}
+
+
+bool AudioPacketBuffer::was_reset() const
+{
+    return was_reset_;
+}
+
+
+void AudioPacketBuffer::clear()
+{
+    was_reset_ = false;
+}
+
+
+bool AudioPacketBuffer::is_filled_with_magic() const
+{
+    return metatable_[(head_offset_ + 3 * capacity_ / 4) % capacity_];
 }
 
 }

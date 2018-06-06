@@ -2,8 +2,10 @@
 #define SIKRADIO_CONFIG_HPP
 
 #include <string>
-#include <Network/Address.hpp>
 #include <chrono>
+#include <endian.h>
+#include <algorithm>
+#include <Network/Address.hpp>
 
 
 
@@ -42,6 +44,17 @@ struct Params
      */
     Params();
 };
+
+
+template <typename T>
+constexpr T hton(T value) noexcept
+{
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    char* ptr = reinterpret_cast<char*>(&value);
+    std::reverse (ptr, ptr + sizeof(T));
+#endif
+    return value;
+}
 
 }
 

@@ -23,15 +23,20 @@ protected:
     std::string station_name_;
     Utility::Network::Address station_address_;
 
+    std::shared_ptr<Utility::Reactor::OStreamResource> stdout_;
     Utility::AudioPacketBuffer buffer_;
     State state_ = WAIT_FIRST_DATA;
-    bool stdin_ready_ = false;
+    bool stdout_ready_ = false;
+    Utility::AudioPacket in_packet_;
+    size_t part_packet_read_ = 0;
+    Utility::AudioPacket out_packet_;
+    size_t part_packet_write_ = 0;
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
     void handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event);
     void handle_station_event_(std::shared_ptr<Events::Lookup::StationEvent> event);
 
-    void reset_buffer();
+    void try_write_();
 
 public:
     PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor);

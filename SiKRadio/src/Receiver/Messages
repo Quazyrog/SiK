@@ -13,4 +13,5 @@ This is list of event messages used by receiver:
 /Player
     /Internal
         /DataAvailable  -- from data socket
+        /StdoutReady  -- when stdout is write-ready
     /WombatLooksForFriends  -- sent when player wants any station to be broadcasted
