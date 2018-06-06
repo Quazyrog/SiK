@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cassert>
 #include <Reactor/Reactor.hpp>
+#include <Exceptions.hpp>
 #include "PlayerComponent.hpp"
 
 using namespace Events::Player;
@@ -9,7 +10,7 @@ using namespace Events::Player;
 
 PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
     reactor_(reactor),
-    buffer_(params.bsize, params.psize - sizeof(Utility::AudioPacket) + sizeof(char *))
+    buffer_(params.bsize, params.psize)
 {
     in_packet_.audio_data = new char [buffer_.packet_data_size()];
     std::memset(in_packet_.audio_data, 0, buffer_.packet_data_size());
@@ -17,7 +18,6 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
     // Socket
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
     socket_->make_nonblocking();
-    socket_->enable_broadcast();
     reactor_.add_resource("/Player/Internal/DataAvailable", socket_);
 
     // Stdout
@@ -33,7 +33,7 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
 
 void PlayerComponent::play_station(std::string name)
 {
-    if (name.empty() || name.length() > 64)
+    if (name.length() > 64)
         throw std::invalid_argument("Invalid station name");
     state_ = WAIT_FIRST_DATA;
     station_name_ = name;
@@ -51,6 +51,7 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
     } else if ("/Player/Internal/DataAvailable" == event->name()) {
         auto ev = std::dynamic_pointer_cast<Utility::Reactor::StreamEvent>(event);
         handle_data_(ev);
+        std::cerr << "Got data!" << std::endl;
 
     } else if ("/Player/Internal/StdoutReady" == event->name()) {
         stdout_ready_ = true;
@@ -83,9 +84,22 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
             // It is our station that we want to update
             if (!station_address_.empty())
                 socket_->leave_multicast(station_address_);
-            station_address_ = Utility::Network::Address(station_data.mcast_addr.host());
-            socket_->bind_address(Utility::Network::Address::localhost(station_data.mcast_addr.port()));
-            socket_->join_multicast(station_address_);
+
+            // Now try to connect to station
+            try {
+                auto new_addr = Utility::Network::Address::localhost(station_data.mcast_addr.port());
+                if (new_addr != local_address_)
+                    socket_->bind_address(station_data.mcast_addr);
+                socket_->join_multicast(station_data.mcast_addr);
+                local_address_ = new_addr;
+                station_address_ = station_data.mcast_addr;
+            } catch (Utility::Exceptions::SystemError &err) {
+                std::cerr << "Cannot connect to station '" << station_name_ << "' on mcast " << station_address_.host();
+                std::cerr << " and port " << station_data.mcast_addr.port() << ";";
+                std::cerr << " error: " << err.what() << std::endl;
+                play_station("");
+                return;
+            }
             std::cerr << "PlayerComponent: changed playied station addres to " << station_address_ << std::endl;
         }
     }
@@ -94,6 +108,7 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 
 void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event)
 {
+    std::cerr << "Some data!!!" << std::endl;
     const size_t metadata_len = offsetof(Utility::AudioPacket, audio_data);
     bool read_ready = true;
 

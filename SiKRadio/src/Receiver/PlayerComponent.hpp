@@ -21,6 +21,7 @@ protected:
     std::shared_ptr<Utility::Network::UDPSocket> socket_;
 
     std::string station_name_;
+    Utility::Network::Address local_address_;
     Utility::Network::Address station_address_;
 
     std::shared_ptr<Utility::Reactor::OStreamResource> stdout_;

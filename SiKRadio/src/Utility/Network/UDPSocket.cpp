@@ -10,9 +10,18 @@ namespace Utility::Network {
 
 UDPSocket::UDPSocket()
 {
-    fd_ = socket(PF_INET, SOCK_DGRAM, 0);
+    fd_ = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd_ < 0)
         throw Utility::Exceptions::SystemError("Unable to create socket");
+    const int opt_val = 1;
+    if (setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &opt_val, sizeof(opt_val)) != 0)
+        throw Utility::Exceptions::SystemError("Unable to bind socket reusable");
+}
+
+
+UDPSocket::~UDPSocket()
+{
+    close(fd_);
 }
 
 
@@ -44,12 +53,6 @@ bool UDPSocket::receive(char *buffer, size_t max_len, size_t &rd_len, Address &r
     remote_addr = Address(raddr);
     rd_len = static_cast<size_t>(rcv_len);
     return rcv_len > 0;
-}
-
-
-UDPSocket::~UDPSocket()
-{
-    close(fd_);
 }
 
 

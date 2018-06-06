@@ -58,7 +58,7 @@ void LookupComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
 void LookupComponent::send_lookup_()
 {
     const std::string DATA = "ZERO_SEVEN_COME_IN\n";
-    std::cerr << "LookupComponent: Sending lookup request" << std::endl;
+//    std::cerr << "LookupComponent: Sending lookup request" << std::endl;
     ctrl_socket_->send(DATA.c_str(), DATA.length(), discovery_addr_);
 }
 
