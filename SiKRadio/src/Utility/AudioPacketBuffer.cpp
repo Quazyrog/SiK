@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iostream>
 #include "AudioPacketBuffer.hpp"
 
 
@@ -56,11 +57,13 @@ void AudioPacketBuffer::put(AudioPacket &packet)
     if (!was_reset_)
         throw std::logic_error("Buffer needs to be reset firstly");
     // Check if slot is free
-    if (has_by_offset(packet.first_byte_num))
+    auto index_offset = ((packet.first_byte_num - byte0_offset_) / packet_size_) % capacity_;
+    auto abs_index = packet.first_byte_num / packet_size_;
+//    std::cerr << index_offset << "  " << abs_index << " :: " << packet.first_byte_num << std::endl;
+    if (abs_index < head_abs_index_ || abs_index - head_abs_index_ >= capacity_ || metatable_[index_offset])
         throw BufferStorageError("Required slot is occupied (or too far from head)");
 
     // Store the packet
-    auto index_offset = (packet.first_byte_num - byte0_offset_) / packet_size_;
     metatable_[index_offset] = true;
     std::memcpy(data_ + index_offset * packet_size_, packet.audio_data, packet_size_);
 }
@@ -71,7 +74,7 @@ AudioPacketBuffer &AudioPacketBuffer::operator>>(AudioPacket &dst)
     if (!was_reset_)
         throw std::logic_error("Buffer needs to be reset firstly");
     // Check availability and mark slot as unused
-    if (!has_by_offset(dst.first_byte_num))
+    if (!metatable_[head_offset_])
         throw BufferStorageError("No data available");
     metatable_[head_offset_] = false;
 

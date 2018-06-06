@@ -12,9 +12,6 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
     reactor_(reactor),
     buffer_(params.bsize, params.psize)
 {
-    in_packet_.audio_data = new char [buffer_.packet_data_size()];
-    std::memset(in_packet_.audio_data, 0, buffer_.packet_data_size());
-
     // Socket
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
     socket_->make_nonblocking();
@@ -37,7 +34,6 @@ void PlayerComponent::play_station(std::string name)
         throw std::invalid_argument("Invalid station name");
     state_ = WAIT_FIRST_DATA;
     station_name_ = name;
-    part_packet_read_ = 0;
     std::cerr << "PlayerComponent: now will play '" << name << "'" << std::endl;
 }
 
@@ -51,7 +47,6 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
     } else if ("/Player/Internal/DataAvailable" == event->name()) {
         auto ev = std::dynamic_pointer_cast<Utility::Reactor::StreamEvent>(event);
         handle_data_(ev);
-        std::cerr << "Got data!" << std::endl;
 
     } else if ("/Player/Internal/StdoutReady" == event->name()) {
         stdout_ready_ = true;
@@ -108,54 +103,41 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 
 void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event)
 {
-    std::cerr << "Some data!!!" << std::endl;
+    using Utility::AudioPacket;
+
     const size_t metadata_len = offsetof(Utility::AudioPacket, audio_data);
+    char *buffer = new char [buffer_.packet_size()];
     bool read_ready = true;
 
     do {
         size_t rd_len = 0;
-        assert(part_packet_read_ < buffer_.packet_size());
-
-        if (part_packet_read_ < metadata_len) {
-            // Reading metadata
-            read_ready = socket_->read(reinterpret_cast<char *>(&in_packet_ + part_packet_read_),
-                    metadata_len - part_packet_read_, rd_len);
-            part_packet_read_ += rd_len;
-            assert(part_packet_read_ <= metadata_len);
-
-            if (part_packet_read_ == metadata_len) {
-                // Metadata read complete
-                assert(state_ == WAIT_FIRST_DATA);
-                in_packet_.session_id = Utility::Misc::hton(in_packet_.session_id);
-                in_packet_.first_byte_num = Utility::Misc::hton(in_packet_.first_byte_num);
-                if (!buffer_.was_reset()) {
-                    state_ = WAIT_BUFFER;
-                    buffer_.reset(in_packet_.first_byte_num);
-                }
-            }
-
-        } else {
-            // Reading data
-            assert(part_packet_read_ < buffer_.packet_size());
-            char * const offset = in_packet_.audio_data + part_packet_read_ - metadata_len;
-            const size_t max_read = buffer_.packet_data_size() - (offset - in_packet_.audio_data);
-            read_ready = socket_->read(offset, max_read, rd_len);
-            assert(part_packet_read_ <= buffer_.packet_size());
-
-            if (part_packet_read_ == buffer_.packet_size()) {
-                // Entire packet was read
-                try {
-                    buffer_.put(in_packet_);
-                } catch (Utility::BufferStorageError &err) {
-                    std::cerr << "PlayerComponent: cannot store received packet (first_byte=";
-                    std::cerr << std::to_string(Utility::Misc::hton(in_packet_.first_byte_num)) << ") ";
-                    std::cerr << "error: " << err.what() << std::endl;
-                }
-
-                part_packet_read_ = 0;
-                try_write_();
+        AudioPacket packet;
+        read_ready = socket_->read(buffer, buffer_.packet_size(), rd_len);
+        if (rd_len != buffer_.packet_size()) {
+            if (read_ready)
+                std::cerr << "PlayerComponent: Invalid packet size: dtop it!" << std::endl;
+            continue;
+        }
+        packet.session_id = Utility::Misc::hton<uint64_t>(
+                *reinterpret_cast<uint64_t*>(buffer + offsetof(AudioPacket, session_id)));
+        packet.first_byte_num = Utility::Misc::hton<uint64_t>(
+                *reinterpret_cast<uint64_t*>(buffer + offsetof(AudioPacket, first_byte_num)));
+        packet.audio_data = buffer + offsetof(AudioPacket, audio_data);
+        if (!buffer_.was_reset()) {
+            assert(state_ == WAIT_FIRST_DATA);
+            state_ = WAIT_BUFFER;
+            try {
+                buffer_.reset(packet.first_byte_num);
+            } catch (std::invalid_argument &err) {
+                std::cerr << "PlayerComponent: cannot reset buffer: " << err.what() << std::endl;
             }
         }
+        try {
+            buffer_.put(packet);
+        } catch (Utility::BufferStorageError &err) {
+            std::cerr << "PlayerComponent: cannot store buffer data: " << err.what() << std::endl;
+        }
+        try_write_();
     } while (read_ready);
 
     event->reenable_source();
@@ -178,20 +160,10 @@ void PlayerComponent::try_write_()
 
     try {
         while (stdout_ready_) {
-            assert(part_packet_write_ <= buffer_.packet_data_size());
+            buffer_ >> packet; /* Consume packet, this may throw breaking the loop if no packet data avail */
 
-            if (part_packet_write_ == buffer_.packet_data_size()) {
-                // Start writing new packet
-                buffer_ >> out_packet_; /* Consume packet, this may throw breaking the loop if no packet data avail */
-                part_packet_write_ = 0;
-            }
-
-            assert(part_packet_write_ < buffer_.packet_data_size());
             size_t wr_len;
-            stdout_ready_ = stdout_->write(out_packet_.audio_data + part_packet_write_,
-                    buffer_.packet_data_size() - part_packet_write_, wr_len);
-            part_packet_write_ = wr_len;
-            assert(part_packet_write_ <= buffer_.packet_data_size());
+            stdout_ready_ = stdout_->write(packet.audio_data, buffer_.packet_data_size(), wr_len);
         }
 
         // We exited from loop not by exception, so stdout is full, we should again listen for it to be ready

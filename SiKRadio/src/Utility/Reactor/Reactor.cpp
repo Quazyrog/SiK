@@ -77,7 +77,11 @@ void Reactor::operator()()
         // Wait fot event
         epoll_event ev{};
         std::memset(&ev, 0, sizeof(ev));
-        epoll_wait(epoll_, &ev, 1, -1);
+        if (epoll_wait(epoll_, &ev, 1, -1) < 0) {
+            if (errno == EINTR)
+                continue;
+            throw Utility::Exceptions::SystemError("epoll_wait failed");
+        }
 
         if (!running_)
             break;

@@ -53,8 +53,6 @@ StreamResource::StreamResource(int fd):
 
 void StreamResource::make_nonblocking()
 {
-    if (fd_ == 0)
-        std::cerr << ("\e[1;33m" + std::to_string(fd_) + "\e[0;0m") << std::endl;
     if (fcntl(fd_, F_SETFL, fcntl(fd_, F_GETFL) | O_NONBLOCK) < 0)
         throw Utility::Exceptions::SystemError("Cannot switch to non-blocking mode");
 }

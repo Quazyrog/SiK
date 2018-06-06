@@ -28,10 +28,6 @@ protected:
     Utility::AudioPacketBuffer buffer_;
     State state_ = WAIT_FIRST_DATA;
     bool stdout_ready_ = false;
-    Utility::AudioPacket in_packet_;
-    size_t part_packet_read_ = 0;
-    Utility::AudioPacket out_packet_;
-    size_t part_packet_write_ = 0;
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
     void handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event);
