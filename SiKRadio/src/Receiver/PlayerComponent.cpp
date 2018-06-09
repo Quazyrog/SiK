@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <climits>
 #include <Reactor/Reactor.hpp>
 #include <Exceptions.hpp>
 #include <Reactor/Timer.hpp>
@@ -7,9 +8,6 @@
 
 using namespace Events::Player;
 
-namespace {
-const size_t MAX_PACKET_SIZE = 256 * 256;
-}
 
 
 PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
@@ -45,7 +43,6 @@ void PlayerComponent::play_station(std::string name)
 {
     if (name.length() > 64)
         throw std::invalid_argument("Invalid station name");
-    state_ = WAIT_FIRST_DATA;
     station_name_ = name;
     LOG_INFO(logger_) << "now will play '" << name << "'";
 }
@@ -67,7 +64,7 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
 
     } else if ("/Player/Internal/Retransmit" == event->name()) {
         LOG_DEBUG(logger_) << "wants retransmission from " << station_ctrl_addr_;
-        reactor_.broadcast_event(std::make_shared<RetransmissionEvent>(buffer_.retransmit_list(), station_ctrl_addr_));
+        reactor_.broadcast_event(std::make_shared<RetransmissionEvent>(buffer_.missing_list(), station_ctrl_addr_));
     }
 }
 
@@ -121,75 +118,65 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 
 void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event)
 {
-    using Utility::AudioPacket;
+    const size_t BUFFER_SIZE = std::numeric_limits<uint16_t>::max();
+    char *buffer = new char [BUFFER_SIZE];
 
-    const size_t metadata_len = offsetof(Utility::AudioPacket, audio_data);
-    char *buffer = new char [MAX_PACKET_SIZE];
-    bool read_ready = true;
-
-    do {
-        size_t rd_len = 0;
-        AudioPacket packet;
-        read_ready = socket_->read(buffer, MAX_PACKET_SIZE, rd_len);
-        if (rd_len == 0)
-            continue;
-        packet.session_id = Utility::Misc::hton<uint64_t>(
-                *reinterpret_cast<uint64_t*>(buffer + offsetof(AudioPacket, session_id)));
-        packet.first_byte_num = Utility::Misc::hton<uint64_t>(
-                *reinterpret_cast<uint64_t*>(buffer + offsetof(AudioPacket, first_byte_num)));
-        packet.audio_data = buffer + metadata_len;
-        if (state_ == WAIT_FIRST_DATA) {
-            state_ = WAIT_BUFFER;
+    size_t rd_len = 0;
+    socket_->read(buffer, BUFFER_SIZE, rd_len);
+    if (rd_len == 0) {
+        LOG_WARNING(logger_) << "that's quite unexpected... packet with no data";
+        return;
+    }
+    try {
+        AudioBuffer::Packet pk = AudioBuffer::Packet::from_data(buffer, rd_len);
+        // FIXME session id handling
+        buffer_.put(pk);
+        if (!timer_->runing())
             timer_->start();
-            try {
-                buffer_.reset(packet.first_byte_num, rd_len - metadata_len);
-            } catch (std::invalid_argument &err) {
-                LOG_ERROR(logger_) << "cannot reset buffer: " << err.what();
-                goto HELL;
-            }
-        }
-        try {
-            buffer_.put(packet);
-        } catch (Utility::BufferStorageError &err) {
-            LOG_WARNING(logger_) << "cannot store buffer data: " << err.what();
-            goto HELL;
-        }
-HELL:
+    } catch (std::invalid_argument &err) {
+        LOG_WARNING(logger_) << "cannot load data to audio packet: " << err.what();
+    }
+
+    if (stdout_ready_)
         try_write_();
-    } while (read_ready);
 
     event->reenable_source();
+    /* We receive only one packet to make receive/write simultaneous */
 }
 
 
 void PlayerComponent::try_write_()
 {
-    if (state_ == WAIT_FIRST_DATA)
+    if (!buffer_.filled_with_magic() || !stdout_ready_)
         return;
-    if (state_ == WAIT_BUFFER) {
-        if (buffer_.is_filled_with_magic())
-            state_ = STREAM;
-        else
-            return;
-    }
 
-    Utility::AudioPacket packet;
-    packet.audio_data = new char [buffer_.packet_data_size()];
-    LOG_DEBUG(logger_) << "stdouting data";
+    AudioBuffer::Packet packet;
+    if (buffer_.load_head(packet)) {
+    // Buffer is not empty, we can write
+        if (packet.first_byte_num() - last_written_data_ > packet.audio_size())
+            LOG_WARNING(logger_) << "skipped " << last_written_data_ << " to " << packet.first_byte_num() - 1
+                                 << " (" << packet.first_byte_num() - last_written_data_ << " bytes)";
 
-    try {
-        while (stdout_ready_) {
-            buffer_ >> packet; /* Consume packet, this may throw breaking the loop if no packet data avail */
+        size_t wr_len;
+        stdout_->write(packet.audio_data() + partial_write_, packet.audio_size(), wr_len);
+        partial_write_ += wr_len;
+        last_written_data_ = packet.first_byte_num() + partial_write_;
 
-            size_t wr_len;
-            stdout_ready_ = stdout_->write(packet.audio_data, buffer_.packet_data_size(), wr_len);
+        // Check if entire pack was written, pop head
+        assert(partial_write_ <= packet.audio_size());
+        if (partial_write_ == packet.audio_size()) {
+            partial_write_ = 0;
+            buffer_.pop_head();
+        } else {
+            /* Write was partial -> stdout is not ready */
+            stdout_ready_ = false;
+            reactor_.reenable_resource(stdout_.get());
         }
 
-        // We exited from loop not by exception, so stdout is full, we should again listen for it to be ready
-        reactor_.reenable_resource(stdout_.get());
-    } catch (Utility::BufferStorageError &err) {
-        LOG_DEBUG(logger_) << "buffer empty: should reconnect";
+    } else {
+    // Buffer empty, would print empty data
+        timer_->stop();
         buffer_.clear();
-        state_ = WAIT_FIRST_DATA;
+
     }
 }

@@ -5,7 +5,7 @@
 #include <Network/UDPSocket.hpp>
 #include <Network/Address.hpp>
 #include <Misc.hpp>
-#include <AudioPacketBuffer.hpp>
+#include "AudioBuffer.hpp"
 #include "ReceiverMisc.hpp"
 #include "Events.hpp"
 
@@ -28,8 +28,9 @@ protected:
     Utility::Network::Address station_ctrl_addr_;
 
     std::shared_ptr<Utility::Reactor::OStreamResource> stdout_;
-    Utility::AudioPacketBuffer buffer_;
-    State state_ = WAIT_FIRST_DATA;
+    AudioBuffer buffer_;
+    uint64_t last_written_data_ = 0;
+    size_t partial_write_ = 0;
     bool stdout_ready_ = false;
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;

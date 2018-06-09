@@ -23,6 +23,7 @@ protected:
     long unsigned int val_;
     /// Interval between subsequent timer expiration, in nanoseconds
     long unsigned int inter_;
+    bool running_ = true;
 
     /**
      * Flush timerfd spec using current values of <c>val_</c> and <c>inter_</c>, using <c>timerfd_settime()</c>
@@ -56,6 +57,10 @@ public:
     ~Timer();
 
     void stop();
+    bool runing()
+    {
+        return running_;
+    }
     void start();
 
     virtual int descriptor() const

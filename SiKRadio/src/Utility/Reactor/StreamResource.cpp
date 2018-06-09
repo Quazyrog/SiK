@@ -64,8 +64,7 @@ int StreamResource::descriptor() const
 }
 
 
-std::shared_ptr<Event>
-StreamResource::generate_event(uint32_t event_mask, DescriptorResource::ResourceAction &action)
+std::shared_ptr<Event> StreamResource::generate_event(uint32_t event_mask, DescriptorResource::ResourceAction &action)
 {
     if (event_mask & EPOLLIN) {
         action = SUSPEND;

@@ -6,7 +6,7 @@ find_package(Boost COMPONENTS program_options log REQUIRED)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
 
 set(COMMON_SOURCES
-        src/Utility/AudioPacketBuffer.cpp
+        src/Receiver/AudioBuffer.cpp
         src/Utility/Misc.cpp
         src/Utility/Network/Address.cpp
         src/Utility/Network/UDPSocket.cpp

@@ -70,13 +70,15 @@ void Timer::stop()
 {
     val_ = 0;
     sync_spec_();
+    running_ = false;
 }
 
 
 void Timer::start()
 {
-    val_ = 1;
+    val_ = inter_;
     sync_spec_();
+    running_ = true;
 }
 
 

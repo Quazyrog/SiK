@@ -29,6 +29,77 @@ Params::Params()
 }
 
 
+AudioPacket::AudioPacket(uint64_t data_size):
+        audio_data_size_(data_size),
+        free_memory_(true),
+        data_(new char [data_size + 2 * sizeof(uint64_t)]),
+        session_id_(reinterpret_cast<uint64_t *>(data_)),
+        first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
+        audio_data_(data_ + 2 * sizeof(uint64_t))
+{}
+
+
+AudioPacket::AudioPacket(char *memory, uint64_t data_size):
+        audio_data_size_(data_size),
+        free_memory_(false),
+        data_(new char [data_size + 2 * sizeof(uint64_t)]),
+        session_id_(reinterpret_cast<uint64_t *>(data_)),
+        first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
+        audio_data_(data_ + 2 * sizeof(uint64_t))
+{}
+
+
+AudioPacket::AudioPacket(AudioPacket &&other) noexcept :
+        audio_data_size_(other.audio_data_size_),
+        free_memory_(true),
+        data_(other.data_),
+        session_id_(other.session_id_),
+        first_byte_num_(other.first_byte_num_),
+        audio_data_(other.audio_data_)
+{
+    other.data_ = nullptr;
+}
+
+
+AudioPacket::~AudioPacket()
+{
+    if (free_memory_)
+        delete data_;
+}
+
+
+void AudioPacket::load(const char *data)
+{
+    std::memcpy(data_, data, audio_data_size_ + 2 * sizeof(uint64_t));
+    if (first_byte_num() % audio_data_size_ != 0)
+        throw std::invalid_argument("invalid first byte for given package size");
+}
+
+
+AudioPacket AudioPacket::from_data(const char *data, size_t len)
+{
+    if (len <= 2 * sizeof(uint64_t))
+        throw std::invalid_argument("data smaller than metadata");
+    auto pk = AudioPacket(len - 2 * sizeof(uint64_t));
+    pk.load(data);
+}
+
+
+AudioPacket &AudioPacket::operator=(const AudioPacket &other)
+{
+    if (free_memory_)
+        delete data_;
+    audio_data_size_ = other.audio_size();
+    free_memory_ = true;
+    data_ = new char [other.size()];
+    session_id_ = reinterpret_cast<uint64_t *>(data_);
+    first_byte_num_ = reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t));
+    audio_data_ = data_ + 2 * sizeof(uint64_t);
+    load(other.data());
+    return *this;
+}
+
+
 void init_boost_log(const Utility::Misc::Params &params)
 {
     using namespace boost::log;
