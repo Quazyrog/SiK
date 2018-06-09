@@ -24,6 +24,7 @@ Address::Address(const std::string &host):
 Address::Address(const std::string &host, uint16_t port)
 {
     addr_.sin_family = AF_INET;
+    std::memset(&addr_, 0, sizeof(addr_));
     this->host(host);
     this->port(port);
 }
