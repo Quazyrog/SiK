@@ -1,10 +1,15 @@
+#include <thread>
+#include <csignal>
 #include <iostream>
+
 #include <boost/program_options.hpp>
+#include <boost/log/attributes/attribute.hpp>
+#include <boost/log/attributes/constant.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+
 #include <Network/UDPSocket.hpp>
 #include <Misc.hpp>
 #include <Reactor/Reactor.hpp>
-#include <thread>
-#include <csignal>
 #include "LookupComponent.hpp"
 #include "PlayerComponent.hpp"
 
@@ -30,7 +35,8 @@ Utility::Misc::Params parse_args(int argc, char **argv)
             ("ui-port,U", value(&(params.ui_port)), "telnet-cli port (tcp)")
             ("bsize,b", value(&(params.bsize)), "buffer size (bytes)")
             ("rtime,R", value(&(params.rtime)), "retransmission wait time (milliseconds)")
-            ("station-name,n", value(&(params.station_name)), "name of station to play");
+            ("station-name,n", value(&(params.station_name)), "name of station to play")
+            ("verbose,v", value(&(params.verbosity)), "use if you like spam on stderr — verbosity level");
 
     variables_map vm;
     store(parse_command_line(argc, argv, desc), vm);
@@ -62,13 +68,18 @@ int main(int argc, char **argv)
     auto params = parse_args(argc, argv);
     reactor = new Utility::Reactor::Reactor();
     signal(SIGINT, sigint_handler);
+    Utility::Misc::init_boost_log(params);
 
     // Construct lookup component
-    auto lookup_component = std::make_shared<LookupComponent>(params, *reactor);
+    Utility::Misc::LoggerType lookup_logger;
+    lookup_logger.add_attribute("Component", boost::log::attributes::constant<std::string>("Lookup"));
+    auto lookup_component = std::make_shared<LookupComponent>(params, *reactor, lookup_logger);
     reactor->add_listener(lookup_component);
 
     // Player component
-    auto player_component = std::make_shared<PlayerComponent>(params, *reactor);
+    Utility::Misc::LoggerType player_logger;
+    player_logger.add_attribute("Component", boost::log::attributes::constant<std::string>("Player"));
+    auto player_component = std::make_shared<PlayerComponent>(params, *reactor, player_logger);
     if (!params.station_name.empty())
         player_component->play_station(params.station_name);
     reactor->add_listener(player_component);

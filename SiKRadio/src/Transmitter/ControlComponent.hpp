@@ -3,11 +3,15 @@
 
 #include <cstdint>
 #include <set>
+#include "TransmitterMisc.hpp"
 
 
 
 class ControlComponent : public Utility::Reactor::EventListener
 {
+protected:
+    Utility::Misc::LoggerType logger_;
+
     Utility::Reactor::Reactor &reactor_;
     std::shared_ptr<Utility::Network::UDPSocket> socket_;
 
@@ -16,13 +20,12 @@ class ControlComponent : public Utility::Reactor::EventListener
 
     std::unordered_set<uint64_t> retransPackets_;
 
-public:
-    ControlComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor);
-
-protected:
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
     void handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event);
     void execute_command_(std::stringstream ss, Utility::Network::Address from_address);
+
+public:
+    ControlComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor, Utility::Misc::LoggerType logger);
 };
 
 

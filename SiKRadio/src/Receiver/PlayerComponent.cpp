@@ -12,7 +12,9 @@ const size_t MAX_PACKET_SIZE = 256 * 256;
 }
 
 
-PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
+PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
+                                 Utility::Misc::LoggerType logger):
+    logger_(logger),
     reactor_(reactor),
     buffer_(params.bsize)
 {
@@ -35,6 +37,7 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
     // Filters
     add_filter_("/Player/Internal/.*");
     add_filter_("/Lookup/Station/.*");
+    LOG_INFO(logger_) << "initialization complete";
 }
 
 
@@ -44,7 +47,7 @@ void PlayerComponent::play_station(std::string name)
         throw std::invalid_argument("Invalid station name");
     state_ = WAIT_FIRST_DATA;
     station_name_ = name;
-    std::cerr << "PlayerComponent: now will play '" << name << "'" << std::endl;
+    LOG_INFO(logger_) << "now will play '" << name << "'";
 }
 
 
@@ -63,7 +66,7 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
         try_write_();
 
     } else if ("/Player/Internal/Retransmit" == event->name()) {
-        std::cerr << "PlayerComponent: wants retransmission from " << station_ctrl_addr_ << std::endl;
+        LOG_DEBUG(logger_) << "wants retransmission from " << station_ctrl_addr_;
         reactor_.broadcast_event(std::make_shared<RetransmissionEvent>(buffer_.retransmit_list(), station_ctrl_addr_));
     }
 }
@@ -80,7 +83,7 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
             reactor_.broadcast_event(std::make_shared<ConnectionLostEvent>());
             socket_->leave_multicast(station_address_);
             station_address_ = Utility::Network::Address();
-            std::cerr << "PlayerComponent: playied station timed out" << std::endl;
+            LOG_WARNING(logger_) << "played station timed out";
         }
 
     } else {
@@ -104,13 +107,13 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
                 local_address_ = new_addr;
                 station_address_ = station_data.mcast_addr;
             } catch (Utility::Exceptions::SystemError &err) {
-                std::cerr << "Cannot connect to station '" << station_name_ << "' on mcast " << station_address_.host();
-                std::cerr << " and port " << station_data.mcast_addr.port() << ";";
-                std::cerr << " error: " << err.what() << std::endl;
+                LOG_ERROR(logger_) << "Cannot connect to station '" << station_name_ << "' on mcast "
+                        << station_address_.host() << " and port " << station_data.mcast_addr.port() << ";"
+                        << " error: " << err.what();
                 play_station("");
                 return;
             }
-            std::cerr << "PlayerComponent: changed playied station addres to " << station_address_ << std::endl;
+            LOG_INFO(logger_) << "now connected to '" << station_name_ << "' with address " << station_address_;
         }
     }
 }
@@ -141,14 +144,14 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
             try {
                 buffer_.reset(packet.first_byte_num, rd_len - metadata_len);
             } catch (std::invalid_argument &err) {
-                std::cerr << "PlayerComponent: cannot reset buffer: " << err.what() << std::endl;
+                LOG_ERROR(logger_) << "cannot reset buffer: " << err.what();
                 goto HELL;
             }
         }
         try {
             buffer_.put(packet);
         } catch (Utility::BufferStorageError &err) {
-            std::cerr << "PlayerComponent: cannot store buffer data: " << err.what() << std::endl;
+            LOG_WARNING(logger_) << "cannot store buffer data: " << err.what();
             goto HELL;
         }
 HELL:
@@ -172,7 +175,7 @@ void PlayerComponent::try_write_()
 
     Utility::AudioPacket packet;
     packet.audio_data = new char [buffer_.packet_data_size()];
-    std::cerr << "PlayerComponent: stdouting data" << std::endl;
+    LOG_DEBUG(logger_) << "stdouting data";
 
     try {
         while (stdout_ready_) {
@@ -185,7 +188,7 @@ void PlayerComponent::try_write_()
         // We exited from loop not by exception, so stdout is full, we should again listen for it to be ready
         reactor_.reenable_resource(stdout_.get());
     } catch (Utility::BufferStorageError &err) {
-        std::cerr << "PLayerComponent: Buffer empty: should reconnect" << std::endl;
+        LOG_DEBUG(logger_) << "buffer empty: should reconnect";
         buffer_.clear();
         state_ = WAIT_FIRST_DATA;
     }

@@ -17,6 +17,7 @@ protected:
     enum State {WAIT_FIRST_DATA, WAIT_BUFFER, STREAM};
 
 
+    Utility::Misc::LoggerType logger_;
     Utility::Reactor::Reactor &reactor_;
     std::shared_ptr<Utility::Network::UDPSocket> socket_;
     std::shared_ptr<Utility::Reactor::Timer> timer_;
@@ -38,7 +39,8 @@ protected:
     void try_write_();
 
 public:
-    PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor);
+    PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
+                    Utility::Misc::LoggerType logger);
     virtual ~PlayerComponent() = default;
 
     void play_station(std::string name);

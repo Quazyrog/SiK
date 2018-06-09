@@ -6,9 +6,11 @@
 
 
 
-ControlComponent::ControlComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
+ControlComponent::ControlComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
+                                   Utility::Misc::LoggerType logger):
     reactor_(reactor),
-    name_(params.station_name)
+    name_(params.station_name),
+    logger_(logger)
 {
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
     socket_->make_nonblocking();
@@ -21,6 +23,8 @@ ControlComponent::ControlComponent(const Utility::Misc::Params &params, Utility:
     reactor_.add_resource("/Control/Internal/Retransmission", retrans_timer);
 
     add_filter_("/Control/Internal/.*");
+
+    LOG_INFO(logger_) << "initialization complete";
 }
 
 
@@ -39,12 +43,16 @@ void ControlComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEven
     size_t rd_len;
     char *buff = new char [MAX_LEN];
     Utility::Network::Address addr;
+
     socket_->receive(buff, MAX_LEN - 1, rd_len, addr);
-    if (buff[rd_len] == '\n') {
-        buff[rd_len] = 0;
-        std::cerr << "exec " << buff <<  std::endl;
+    if (buff[rd_len - 1] == '\n') {
+        buff[rd_len - 1] = 0;
+        LOG_DEBUG(logger_) << "executing control command `" << buff << "`";
         execute_command_(std::stringstream(buff), addr);
+    } else {
+        LOG_DEBUG(logger_) << " invalid (wrong terminated) control command ignored";
     }
+
     delete [] buff;
     event->reenable_source();
 }
@@ -56,6 +64,7 @@ void ControlComponent::execute_command_(std::stringstream ss, Utility::Network::
     ss >> cmd;
 
     if ("ZERO_SEVEN_COME_IN" == cmd) {
+        LOG_DEBUG(logger_) << "Lookup requested from " << static_cast<std::string>(from_address);
         std::string hello = std::string("BOREWICZ_HERE ") + static_cast<std::string>(mcastAddr_) + " " + name_ + "\n";
         socket_->send(hello.c_str(), hello.length(), from_address);
 
@@ -68,7 +77,9 @@ void ControlComponent::execute_command_(std::stringstream ss, Utility::Network::
         if (!std::regex_match(packets, full))
             return;
         std::regex_search(packets, packet_nr, sub);
+        LOG_DEBUG(logger_) << "Rexmit requested ";
         for (auto match : packet_nr)
-            std::cerr << std::stoi(match, nullptr, 10) << "; ";
+            LOG_DEBUG(logger_) << std::stoi(match, nullptr, 10) << "; ";
+        LOG_DEBUG(logger_) << std::endl;
     }
 }

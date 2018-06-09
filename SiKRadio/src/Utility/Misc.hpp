@@ -5,11 +5,17 @@
 #include <chrono>
 #include <endian.h>
 #include <algorithm>
+
+#include <boost/log/trivial.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+
 #include <Network/Address.hpp>
 
 
 
 namespace Utility::Misc {
+
+using LoggerType = boost::log::sources::severity_logger<boost::log::trivial::severity_level>;
 
 struct Params
 {
@@ -39,10 +45,23 @@ struct Params
     /// Nazwa stacji nadajnika
     std::string station_name;
 
+    unsigned int verbosity = 0;
+
     /**
      * Set default values.
      */
     Params();
+};
+
+
+enum class LoggerSeverity : uint8_t
+{
+    SPAM,
+    DEBUG,
+    INFO,
+    WARNING,
+    ERROR,
+    CRITICAL
 };
 
 
@@ -55,6 +74,15 @@ constexpr T hton(T value) noexcept
 #endif
     return value;
 }
+
+
+void init_boost_log(const Utility::Misc::Params &params);
+#define LOG_TRACE(slg) BOOST_LOG_SEV(slg, boost::log::trivial::trace)
+#define LOG_DEBUG(slg) BOOST_LOG_SEV(slg, boost::log::trivial::debug)
+#define LOG_INFO(slg) BOOST_LOG_SEV(slg, boost::log::trivial::info)
+#define LOG_WARNING(slg) BOOST_LOG_SEV(slg, boost::log::trivial::warning)
+#define LOG_ERROR(slg) BOOST_LOG_SEV(slg, boost::log::trivial::error)
+#define LOG_FATAL(slg) BOOST_LOG_SEV(slg, boost::log::trivial::fatal)
 
 }
 

@@ -13,6 +13,7 @@
 class LookupComponent : public Utility::Reactor::EventListener
 {
 protected:
+    Utility::Misc::LoggerType  logger_;
     Utility::Reactor::Reactor &reactor_;
     std::shared_ptr<Utility::Network::UDPSocket> ctrl_socket_;
     std::shared_ptr<Utility::Reactor::Timer> lookup_timer_;
@@ -31,7 +32,8 @@ protected:
     void station_gc_();
 
 public:
-    explicit LookupComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor);
+    explicit LookupComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
+                             Utility::Misc::LoggerType logger);
     virtual ~LookupComponent() = default;
 };
 

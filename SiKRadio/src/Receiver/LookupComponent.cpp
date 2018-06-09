@@ -13,7 +13,9 @@ const std::string EVENT_NAME_SOCKET = "/Lookup/Internal/Socket";
 }
 
 
-LookupComponent::LookupComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor):
+LookupComponent::LookupComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
+                                 Utility::Misc::LoggerType logger):
+    logger_(logger),
     reactor_(reactor),
     discovery_addr_(params.discover_addr, params.ctrl_port)
 {
@@ -33,7 +35,7 @@ LookupComponent::LookupComponent(const Utility::Misc::Params &params, Utility::R
     add_filter_("/Lookup/Internal/.*");
     add_filter_("/Player/WombatLooksForFriends");
     add_filter_("/Player/Retransmission");
-    /* caller should add this object as listener */
+    LOG_INFO(logger_) << "initialization complete";
 }
 
 
@@ -69,7 +71,7 @@ void LookupComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
 void LookupComponent::send_lookup_()
 {
     const std::string DATA = "ZERO_SEVEN_COME_IN\n";
-//    std::cerr << "LookupComponent: Sending lookup request" << std::endl;
+    LOG_DEBUG(logger_) << "sending lookup request";
     ctrl_socket_->send(DATA.c_str(), DATA.length(), discovery_addr_);
 }
 
@@ -105,7 +107,7 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command, Utility::
         station_name.erase(station_name.begin(), std::find_if(station_name.begin(), station_name.end(), [](int ch) {
             return !std::isspace(ch); })); /* that trims the string */
         if (station_name.length() > 64) {
-            std::cerr << "LookupComponent: station name too long" << std::endl;
+            LOG_WARNING(logger_) << "LookupComponent: station name too long `" << station_name << "`";
             return;
         }
 
@@ -116,7 +118,7 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command, Utility::
             if (port == 0)
                 throw std::invalid_argument("invalid port=0");
         } catch (std::invalid_argument &err) {
-            std::cerr << "LookupComponent: station '" << station_name << "' IP invalid: " << err.what() << std::endl;
+            LOG_WARNING(logger_) << "station '" << station_name << "' IP invalid: " << err.what();
             return;
         }
 
@@ -126,8 +128,7 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command, Utility::
         if (station_it == stations_.end()) {
             // Add
             StationData data = {now, station_name, addr, from};
-            std::cerr << "LookupComponent: new station '" << station_name << "' with mcast-address " << addr;
-            std::cerr << " and ctrl-address " << from << std::endl;
+            LOG_INFO(logger_) << "new station '" << station_name << "' with mcast=" << addr << " addr=" << from;
             reactor_.broadcast_event(std::make_shared<NewStationEvent>(data));
             stations_[station_name] = data;
 
@@ -140,8 +141,8 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command, Utility::
                 auto old = station_it->second.mcast_addr;
                 station_it->second.mcast_addr = addr;
                 station_it->second.stat_addr = from;
-                std::cerr << "LookupComponent: station '" << station_name << "' changed address form ";
-                std::cerr << old << " to " << station_it->second.mcast_addr << std::endl;
+                LOG_INFO(logger_) << "station '" << station_name << "' changed address form " << old << " to "
+                                  << station_it->second.mcast_addr << std::endl;
                 reactor_.broadcast_event(std::make_shared<StationAddressChangedEvent>(station_it->second, old));
 
             } else if (player_wants_station_) {
@@ -162,7 +163,7 @@ void LookupComponent::station_gc_()
     auto now = std::chrono::system_clock::now();
     for (auto it = stations_.begin(); it != stations_.end();) {
         if (now - it->second.last_reply > 20s) {
-            std::cerr << "LookupComponent: station '" << it->second.name << "' timed out" << std::endl;
+            LOG_INFO(logger_) << "LookupComponent: station '" << it->second.name << "' timed out";
             reactor_.broadcast_event(std::make_shared<StationTimedOutEvent>(it->second));
             it = stations_.erase(it);
             ++n_erased;
