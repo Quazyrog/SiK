@@ -20,6 +20,7 @@ link_libraries(-lpthread ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LOG_LIBRARY} $
 add_definitions(-DBOOST_ALL_DYN_LINK)
 
 set(TRANSMITTER_SOURCES
+        src/Transmitter/AudioFIFOBuffer.cpp
         src/Transmitter/ControlComponent.cpp
         src/Transmitter/Main.cpp
         src/Transmitter/SpellCasterComponent.cpp)

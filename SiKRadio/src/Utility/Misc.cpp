@@ -30,32 +30,32 @@ Params::Params()
 
 
 AudioPacket::AudioPacket(uint64_t data_size):
-        audio_data_size_(data_size),
-        free_memory_(true),
-        data_(new char [data_size + 2 * sizeof(uint64_t)]),
-        session_id_(reinterpret_cast<uint64_t *>(data_)),
-        first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
-        audio_data_(data_ + 2 * sizeof(uint64_t))
+    audio_data_size_(data_size),
+    free_memory_(true),
+    data_(new char [data_size + 2 * sizeof(uint64_t)]),
+    session_id_(reinterpret_cast<uint64_t *>(data_)),
+    first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
+    audio_data_(data_ + 2 * sizeof(uint64_t))
 {}
 
 
 AudioPacket::AudioPacket(char *memory, uint64_t data_size):
-        audio_data_size_(data_size),
-        free_memory_(false),
-        data_(new char [data_size + 2 * sizeof(uint64_t)]),
-        session_id_(reinterpret_cast<uint64_t *>(data_)),
-        first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
-        audio_data_(data_ + 2 * sizeof(uint64_t))
+    audio_data_size_(data_size),
+    free_memory_(false),
+    data_(new char [data_size + 2 * sizeof(uint64_t)]),
+    session_id_(reinterpret_cast<uint64_t *>(data_)),
+    first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
+    audio_data_(data_ + 2 * sizeof(uint64_t))
 {}
 
 
 AudioPacket::AudioPacket(AudioPacket &&other) noexcept :
-        audio_data_size_(other.audio_data_size_),
-        free_memory_(true),
-        data_(other.data_),
-        session_id_(other.session_id_),
-        first_byte_num_(other.first_byte_num_),
-        audio_data_(other.audio_data_)
+    audio_data_size_(other.audio_data_size_),
+    free_memory_(true),
+    data_(other.data_),
+    session_id_(other.session_id_),
+    first_byte_num_(other.first_byte_num_),
+    audio_data_(other.audio_data_)
 {
     other.data_ = nullptr;
 }
@@ -87,11 +87,15 @@ AudioPacket AudioPacket::from_data(const char *data, size_t len)
 
 AudioPacket &AudioPacket::operator=(const AudioPacket &other)
 {
-    if (free_memory_)
+    if (!free_memory_ && other.audio_size() != audio_size())
+        throw std::invalid_argument("cannot copy packet data: incompatible sizes but cannot realloc");
+    if (other.audio_size() != audio_size()) {
         delete data_;
+        data_ = new char [other.size()];
+    }
+
     audio_data_size_ = other.audio_size();
     free_memory_ = true;
-    data_ = new char [other.size()];
     session_id_ = reinterpret_cast<uint64_t *>(data_);
     first_byte_num_ = reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t));
     audio_data_ = data_ + 2 * sizeof(uint64_t);
