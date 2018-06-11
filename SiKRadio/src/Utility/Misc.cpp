@@ -88,7 +88,7 @@ AudioPacket AudioPacket::from_data(const char *data, size_t len)
 
 AudioPacket &AudioPacket::operator=(const AudioPacket &other)
 {
-    if (!free_memory_ && other.audio_size() != audio_size())
+    if (!free_memory_ && other.audio_size() != audio_size() && data_ != nullptr)
         throw std::invalid_argument("cannot copy packet data: incompatible sizes but cannot realloc");
     if (other.audio_size() != audio_size()) {
         delete data_;

@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 
     // Main loops
     std::thread lookup_component_thread{[control_component](){control_component->operator()();}};
-    std::thread no_a_single_word_of_truth{[control_component](){control_component->operator()();}};
+    std::thread no_a_single_word_of_truth{[arinvald](){arinvald->operator()();}};
     reactor->operator()();
 
     // Shut down

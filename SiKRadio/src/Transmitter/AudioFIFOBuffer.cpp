@@ -3,8 +3,8 @@
 
 
 AudioFIFOBuffer::AudioFIFOBuffer(size_t buffer_size, size_t audio_hunk_size):
-    hunk_size_(hunk_size_),
-    capacity_(buffer_size / hunk_size_ + 1)
+    hunk_size_(audio_hunk_size),
+    capacity_(buffer_size / audio_hunk_size + 1)
 {
     session_id_ = static_cast<uint64_t>(time(nullptr));
     packets_ = new Packet [capacity_];

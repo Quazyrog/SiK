@@ -24,6 +24,7 @@ SpellCasterComponent::SpellCasterComponent(const Utility::Misc::Params &params, 
     mcast_addr_ = Utility::Network::Address(params.mcast_addr);
 
     add_filter_("/Wizard/Internal/.*");
+    add_filter_("/Control/Retransmission");
     LOG_INFO(logger_) << "initialization complete";
 }
 
