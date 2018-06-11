@@ -16,9 +16,9 @@ protected:
     std::shared_ptr<Utility::Network::UDPSocket> socket_;
 
     std::string name_;
-    Utility::Network::Address mcastAddr_;
+    Utility::Network::Address mcast_addr_;
 
-    std::unordered_set<uint64_t> retransPackets_;
+    std::unordered_set<uint64_t> retrans_packets_;
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
     void handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent> event);

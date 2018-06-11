@@ -31,15 +31,15 @@ void AudioFIFOBuffer::push(const char *audio_data_hunk)
 }
 
 
-bool AudioFIFOBuffer::retrieve(uint64_t first_byte, AudioFIFOBuffer::Packet &packet) const
+const AudioFIFOBuffer::Packet &AudioFIFOBuffer::retrieve(uint64_t first_byte) const
 {
     const auto &head = packets_[head_];
     if (first_byte % head.audio_size() != 0)
         throw std::invalid_argument("invalid first byte number");
     if (first_byte > head.first_byte_num())
-        return false;
+        throw std::out_of_range("first_byte_number later than head");
     size_t head_offset = (head.first_byte_num() - first_byte) / head.audio_size();
     if (head_offset > capacity_)
-        return false;
-    packet = packets_[(head_ + capacity_ - first_byte) % capacity_];
+        throw std::out_of_range("not in FIFO already");
+    return packets_[(head_ + capacity_ - first_byte) % capacity_];
 }

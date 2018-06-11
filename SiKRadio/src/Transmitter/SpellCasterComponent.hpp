@@ -4,11 +4,12 @@
 #include <Reactor/EventListener.hpp>
 #include <Reactor/Reactor.hpp>
 #include <Misc.hpp>
-#include "../Receiver/AudioBuffer.hpp"
+#include <cstdint>
 #include <Reactor/StreamResource.hpp>
 #include <Network/UDPSocket.hpp>
 #include "TransmitterMisc.hpp"
 #include "AudioFIFOBuffer.hpp"
+#include "Events.hpp"
 
 
 
@@ -30,6 +31,8 @@ protected:
 
     void handle_event_(std::shared_ptr<Utility::Reactor::Event> event) override;
     void handle_stdin_(std::shared_ptr<Utility::Reactor::StreamEvent> event);
+
+    void do_retransmission_(std::shared_ptr<RetransmissionEvent> event);
 
 public:
     SpellCasterComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,

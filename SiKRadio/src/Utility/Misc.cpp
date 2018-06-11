@@ -82,6 +82,7 @@ AudioPacket AudioPacket::from_data(const char *data, size_t len)
         throw std::invalid_argument("data smaller than metadata");
     auto pk = AudioPacket(len - 2 * sizeof(uint64_t));
     pk.load(data);
+    return pk;
 }
 
 

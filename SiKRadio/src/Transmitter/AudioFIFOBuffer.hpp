@@ -28,7 +28,7 @@ public:
     ~AudioFIFOBuffer();
 
     void push(const char *audio_data_hunk);
-    bool retrieve(uint64_t first_byte, Packet &packet) const;
+    const Packet &retrieve(uint64_t first_byte) const;
 
     const Packet &front() const
     {

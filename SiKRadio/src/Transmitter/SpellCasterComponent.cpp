@@ -1,5 +1,6 @@
 #include "SpellCasterComponent.hpp"
 #include "AudioFIFOBuffer.hpp"
+#include "Events.hpp"
 #include <utility>
 
 
@@ -16,9 +17,8 @@ SpellCasterComponent::SpellCasterComponent(const Utility::Misc::Params &params, 
     stdin_->make_nonblocking();
     reactor_.add_resource("/Wizard/Internal/Input", stdin_);
 
-    socket_ = std::make_shared<Utility::Network::UDPSocket>();
+    socket_ = std::make_shared<Utility::Network::UDPSocket>(); /* this one is blocking */
     socket_->enable_broadcast();
-    // fixme writes may fail so we need to make udp socket io resource
 
     buffer_ = new char [buffer_capacity_];
     mcast_addr_ = Utility::Network::Address(params.mcast_addr);
@@ -39,6 +39,10 @@ void SpellCasterComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event
     if ("/Wizard/Internal/Input" == event->name()) {
         auto ev = std::dynamic_pointer_cast<Utility::Reactor::StreamEvent>(event);
         handle_stdin_(ev);
+
+    } else if ("/Control/Retransmission" == event->name()) {
+        auto ev = std::dynamic_pointer_cast<RetransmissionEvent>(event);
+        do_retransmission_(ev);
     }
 }
 
@@ -51,10 +55,33 @@ void SpellCasterComponent::handle_stdin_(std::shared_ptr<Utility::Reactor::Strea
 
     if (buffer_fill_ >= package_size_) {
         fifo_.push(buffer_);
-        socket_->send(buffer_, package_size_, mcast_addr_);
+        socket_->send(fifo_.front().data(), fifo_.front().size(), mcast_addr_);
         std::memmove(buffer_, buffer_ + package_size_, buffer_fill_ - package_size_);
         buffer_fill_ -= package_size_;
     }
 
     event->reenable_source();
+}
+
+
+void SpellCasterComponent::do_retransmission_(std::shared_ptr<RetransmissionEvent> event)
+{
+    using namespace std::chrono;
+
+    auto time = high_resolution_clock::now();
+    unsigned int cnt_out_of_range = 0, cnt_invalid = 0;
+    for (auto fbn : event->pk_list()) {
+        try {
+            const auto &packet = fifo_.retrieve(fbn);
+            socket_->send(packet.data(), packet.size(), mcast_addr_);
+        } catch (std::out_of_range &err) {
+            ++cnt_out_of_range;
+        } catch (std::invalid_argument &err) {
+            ++cnt_invalid;
+        }
+    }
+
+    LOG_DEBUG(logger_) << "retransmission done in "  << (high_resolution_clock::now() - time).count()
+                       << event->pk_list().size() << " requested, " << cnt_out_of_range << " out of range, "
+                       << cnt_invalid << " invalid";
 }

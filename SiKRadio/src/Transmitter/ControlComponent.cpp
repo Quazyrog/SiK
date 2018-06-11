@@ -3,7 +3,7 @@
 #include <Network/UDPSocket.hpp>
 #include <Reactor/Timer.hpp>
 #include "ControlComponent.hpp"
-
+#include "Events.hpp"
 
 
 ControlComponent::ControlComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
@@ -17,7 +17,7 @@ ControlComponent::ControlComponent(const Utility::Misc::Params &params, Utility:
     socket_->bind_address(Utility::Network::Address::localhost(params.ctrl_port));
     reactor_.add_resource("/Control/Internal/Socket", socket_);
 
-    mcastAddr_ = Utility::Network::Address(params.mcast_addr, params.data_port);
+    mcast_addr_ = Utility::Network::Address(params.mcast_addr, params.data_port);
 
     auto retrans_timer = std::make_shared<Utility::Reactor::Timer>(params.rtime * 1'000, params.rtime * 1'000);
     reactor_.add_resource("/Control/Internal/Retransmission", retrans_timer);
@@ -33,6 +33,10 @@ void ControlComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> ev
     if ("/Control/Internal/Socket" == event->name()) {
         auto ev = std::dynamic_pointer_cast<Utility::Reactor::StreamEvent>(event);
         handle_data_(ev);
+
+    } else if ("/Control/Internal/Retransmission" == event->name()) {
+        reactor_.broadcast_event(std::make_shared<RetransmissionEvent>(std::move(retrans_packets_)));
+        retrans_packets_.clear();
     }
 }
 
@@ -65,7 +69,7 @@ void ControlComponent::execute_command_(std::stringstream ss, Utility::Network::
 
     if ("ZERO_SEVEN_COME_IN" == cmd) {
         LOG_DEBUG(logger_) << "Lookup requested from " << static_cast<std::string>(from_address);
-        std::string hello = std::string("BOREWICZ_HERE ") + static_cast<std::string>(mcastAddr_) + " " + name_ + "\n";
+        std::string hello = std::string("BOREWICZ_HERE ") + static_cast<std::string>(mcast_addr_) + " " + name_ + "\n";
         socket_->send(hello.c_str(), hello.length(), from_address);
 
     } else if (cmd == "LOUDER_PLEASE") {
@@ -77,9 +81,7 @@ void ControlComponent::execute_command_(std::stringstream ss, Utility::Network::
         if (!std::regex_match(packets, full))
             return;
         std::regex_search(packets, packet_nr, sub);
-        LOG_DEBUG(logger_) << "Rexmit requested ";
         for (auto match : packet_nr)
-            LOG_DEBUG(logger_) << std::stoi(match, nullptr, 10) << "; ";
-        LOG_DEBUG(logger_) << std::endl;
+            retrans_packets_.insert(std::stoull(match, nullptr, 10));
     }
 }
