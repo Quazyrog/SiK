@@ -8,10 +8,11 @@ AudioFIFOBuffer::AudioFIFOBuffer(size_t buffer_size, size_t audio_hunk_size):
 {
     session_id_ = static_cast<uint64_t>(time(nullptr));
     packets_ = new Packet [capacity_];
-    for (size_t i = 0; i < capacity_; ++i) {
-        packets_[i] = Packet(audio_hunk_size);
-        packets_[i].session_id(session_id_);
-    }
+    auto proto = Packet(audio_hunk_size);
+    proto.session_id(session_id_);
+    proto.first_byte_num(0);
+    for (size_t i = 0; i < capacity_; ++i) 
+        packets_[i] = proto;
 }
 
 

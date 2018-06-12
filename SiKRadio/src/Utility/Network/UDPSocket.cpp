@@ -62,7 +62,8 @@ size_t UDPSocket::send(const char *data, size_t length, const Address &destinati
     auto addr = static_cast<sockaddr>(destination);
     auto snd_len = sendto(fd_, data, length, 0, &addr, sizeof(addr));
     if (snd_len < 0)
-        throw Utility::Exceptions::IOError("Cannot sent data with socket");
+        throw Utility::Exceptions::IOError("Cannot sent " + std::to_string(length) + " data with socket to address " 
+                                           + static_cast<std::string>(destination));
     return static_cast<size_t>(snd_len);
 }
 

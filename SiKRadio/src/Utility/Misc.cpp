@@ -32,21 +32,23 @@ Params::Params()
 AudioPacket::AudioPacket(uint64_t data_size):
     audio_data_size_(data_size),
     free_memory_(true),
-    data_(new char [data_size + 2 * sizeof(uint64_t)]),
-    session_id_(reinterpret_cast<uint64_t *>(data_)),
-    first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
-    audio_data_(data_ + 2 * sizeof(uint64_t))
-{}
+    data_(new char [data_size + 2 * sizeof(uint64_t)])
+{
+    session_id_ = reinterpret_cast<uint64_t *>(data_);
+    first_byte_num_ = reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t));
+    audio_data_ = data_ + 2 * sizeof(uint64_t);
+}
 
 
 AudioPacket::AudioPacket(char *memory, uint64_t data_size):
     audio_data_size_(data_size),
     free_memory_(false),
-    data_(new char [data_size + 2 * sizeof(uint64_t)]),
-    session_id_(reinterpret_cast<uint64_t *>(data_)),
-    first_byte_num_(reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t))),
-    audio_data_(data_ + 2 * sizeof(uint64_t))
-{}
+    data_(new char [data_size + 2 * sizeof(uint64_t)])
+{
+    session_id_ = reinterpret_cast<uint64_t *>(data_);
+    first_byte_num_ = reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t));
+    audio_data_ = data_ + 2 * sizeof(uint64_t);
+}
 
 
 AudioPacket::AudioPacket(AudioPacket &&other) noexcept :
@@ -64,7 +66,7 @@ AudioPacket::AudioPacket(AudioPacket &&other) noexcept :
 AudioPacket::~AudioPacket()
 {
     if (free_memory_)
-        delete data_;
+        delete [] data_;
 }
 
 
@@ -93,10 +95,10 @@ AudioPacket &AudioPacket::operator=(const AudioPacket &other)
     if (other.audio_size() != audio_size()) {
         delete data_;
         data_ = new char [other.size()];
+        free_memory_ = true;
     }
 
     audio_data_size_ = other.audio_size();
-    free_memory_ = true;
     session_id_ = reinterpret_cast<uint64_t *>(data_);
     first_byte_num_ = reinterpret_cast<uint64_t *>(data_ + sizeof(uint64_t));
     audio_data_ = data_ + 2 * sizeof(uint64_t);

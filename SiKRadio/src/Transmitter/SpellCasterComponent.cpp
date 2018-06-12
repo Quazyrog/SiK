@@ -21,7 +21,7 @@ SpellCasterComponent::SpellCasterComponent(const Utility::Misc::Params &params, 
     socket_->enable_broadcast();
 
     buffer_ = new char [buffer_capacity_];
-    mcast_addr_ = Utility::Network::Address(params.mcast_addr);
+    mcast_addr_ = Utility::Network::Address(params.mcast_addr, params.data_port);
 
     add_filter_("/Wizard/Internal/.*");
     add_filter_("/Control/Retransmission");
@@ -51,17 +51,22 @@ void SpellCasterComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event
 void SpellCasterComponent::handle_stdin_(std::shared_ptr<Utility::Reactor::StreamEvent> event)
 {
     size_t rd_len;
-    stdin_->read(buffer_ + buffer_fill_, buffer_capacity_, rd_len);
+    stdin_->read(buffer_ + buffer_fill_, buffer_capacity_ - buffer_fill_, rd_len);
     buffer_fill_ += rd_len;
 
+    LOG_DEBUG(logger_) << "Filled " << buffer_fill_ << "/" << package_size_;
     if (buffer_fill_ >= package_size_) {
         fifo_.push(buffer_);
-        socket_->send(fifo_.front().data(), fifo_.front().size(), mcast_addr_);
+        const auto &packet = fifo_.front();
+        if (socket_->send(packet.data(), packet.size(), mcast_addr_) != packet.size())
+            LOG_ERROR(logger_) << "partial packet write";
+        LOG_DEBUG(logger_) << "sent!";
         std::memmove(buffer_, buffer_ + package_size_, buffer_fill_ - package_size_);
         buffer_fill_ -= package_size_;
     }
 
     event->reenable_source();
+    LOG_DEBUG(logger_) << "Reenabled!";
 }
 
 
@@ -82,7 +87,7 @@ void SpellCasterComponent::do_retransmission_(std::shared_ptr<RetransmissionEven
         }
     }
 
-    LOG_DEBUG(logger_) << "retransmission done in "  << (high_resolution_clock::now() - time).count()
-                       << event->pk_list().size() << " requested, " << cnt_out_of_range << " out of range, "
-                       << cnt_invalid << " invalid";
+    std::chrono::duration<double, std::milli> exec_ms = high_resolution_clock::now() - time;
+    LOG_DEBUG(logger_) << "retransmission done in "  << exec_ms.count() << event->pk_list().size() << "ms requested, " 
+                       << cnt_out_of_range << " out of range, " << cnt_invalid << " invalid";
 }
