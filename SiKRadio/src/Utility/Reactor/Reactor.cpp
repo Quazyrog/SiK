@@ -42,7 +42,7 @@ Reactor::Reactor()
 
 void Reactor::add_resource(const std::string &event_name, std::shared_ptr<DescriptorResource> resource)
 {
-    std::lock_guard lock_guard(resources_lock_);
+    resources_lock_.lock();
     if (is_internal_name_(event_name))
         throw std::invalid_argument("Event names prefixed `/Reactor/` are reserved");
 
@@ -66,6 +66,7 @@ void Reactor::add_resource(const std::string &event_name, std::shared_ptr<Descri
     // Now add mappings
     resources_[resource->descriptor()] = resource;
     resources_names_.emplace(event_name);
+    resources_lock_.unlock();
 }
 
 
@@ -102,15 +103,18 @@ void Reactor::stop()
 
 void Reactor::suspend_resource(const DescriptorResource *resource)
 {
-    std::lock_guard lg(resources_lock_);
+    resources_lock_.lock();
     change_event_mask_(resource, 0);
+    resources_lock_.unlock();
 }
 
 
 void Reactor::reenable_resource(const DescriptorResource *resource)
 {
-    std::lock_guard lg(resources_lock_);
+    
+    resources_lock_.lock();
     change_event_mask_(resource, resource->event_mask());
+    resources_lock_.unlock();
 }
 
 
@@ -188,12 +192,6 @@ void Reactor::handle_resource_(int fd, uint32_t events)
     auto event = resource->generate_event(events, action); // yep, we still want lock
     resources_lock_.unlock();
 
-    // Dispatch
-    if (event != nullptr) { // resource can decide to ignore that event
-        assert(event->name() == resource->bound_name());
-        dispatch_(event);
-    }
-
     // Handle action
     resources_lock_.lock();
     if (!resource->is_bound_to(this))
@@ -205,6 +203,15 @@ void Reactor::handle_resource_(int fd, uint32_t events)
         remove_resource_unsafe_(resource);
     }
     resources_lock_.unlock();
+    
+    // Dispatch
+    if (event != nullptr) { // resource can decide to ignore that event
+        assert(event->name() == resource->bound_name());
+        dispatch_(event);
+    }
+    
+    /* I loved that bug: if we change the order of `Handle action` and `Dispatch`, this will randomly stop working.
+       It's good that PW is before SiK... */
 }
 
 
@@ -237,8 +244,9 @@ void Reactor::remove_listener(std::shared_ptr<EventListener> listener)
 
 void Reactor::remove_resource(std::shared_ptr<DescriptorResource> resource)
 {
-    std::lock_guard lg(resources_lock_);
+    resources_lock_.lock();
     remove_resource_unsafe_(resource);
+    resources_lock_.unlock();
 }
 
 
