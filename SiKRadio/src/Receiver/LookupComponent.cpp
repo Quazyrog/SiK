@@ -147,6 +147,7 @@ void LookupComponent::execute_ctrl_command_(std::stringstream command, Utility::
 
             } else if (player_wants_station_) {
                 // No serious update, but we found new friend for Wombar
+                LOG_INFO(logger_) << "Found friend for Wombat!";
                 player_wants_station_ = false;
                 reactor_.broadcast_event(std::make_shared<WombatHereFriendEvent>(station_it->second));
             }

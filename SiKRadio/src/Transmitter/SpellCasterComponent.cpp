@@ -54,25 +54,24 @@ void SpellCasterComponent::handle_stdin_(std::shared_ptr<Utility::Reactor::Strea
     stdin_->read(buffer_ + buffer_fill_, buffer_capacity_ - buffer_fill_, rd_len);
     buffer_fill_ += rd_len;
 
-    LOG_DEBUG(logger_) << "Filled " << buffer_fill_ << "/" << package_size_;
     if (buffer_fill_ >= package_size_) {
         fifo_.push(buffer_);
         const auto &packet = fifo_.front();
         if (socket_->send(packet.data(), packet.size(), mcast_addr_) != packet.size())
             LOG_ERROR(logger_) << "partial packet write";
-        LOG_DEBUG(logger_) << "sent!";
         std::memmove(buffer_, buffer_ + package_size_, buffer_fill_ - package_size_);
         buffer_fill_ -= package_size_;
     }
 
     event->reenable_source();
-    LOG_DEBUG(logger_) << "Reenabled!";
 }
 
 
 void SpellCasterComponent::do_retransmission_(std::shared_ptr<RetransmissionEvent> event)
 {
     using namespace std::chrono;
+    if (event->pk_list().empty())
+        return;
 
     auto time = high_resolution_clock::now();
     unsigned int cnt_out_of_range = 0, cnt_invalid = 0;

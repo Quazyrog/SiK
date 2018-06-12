@@ -69,7 +69,8 @@ void ControlComponent::execute_command_(std::stringstream ss, Utility::Network::
 
     if ("ZERO_SEVEN_COME_IN" == cmd) {
         LOG_DEBUG(logger_) << "Lookup requested from " << static_cast<std::string>(from_address);
-        std::string hello = std::string("BOREWICZ_HERE ") + static_cast<std::string>(mcast_addr_) + " " + name_ + "\n";
+        std::string hello = std::string("BOREWICZ_HERE ") + mcast_addr_.host() + " " 
+                            + std::to_string(mcast_addr_.port()) + " " + name_;
         socket_->send(hello.c_str(), hello.length(), from_address);
 
     } else if (cmd == "LOUDER_PLEASE") {

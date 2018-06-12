@@ -21,6 +21,7 @@ PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::R
     // Socket
     socket_ = std::make_shared<Utility::Network::UDPSocket>();
     socket_->make_nonblocking();
+    socket_->enable_broadcast();
     reactor_.add_resource("/Player/Internal/DataAvailable", socket_);
 
     // Stdout
@@ -90,6 +91,8 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 
         if (station_name_ == event->station_data().name) {
             auto &station_data = event->station_data();
+            LOG_INFO(logger_) << "Trying station `" << station_data.name << "` on " << station_data.mcast_addr;
+            
             // It is our station that we want to update
             if (!station_address_.empty())
                 socket_->leave_multicast(station_address_);
@@ -97,16 +100,14 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 
             // Now try to connect to station
             try {
-                auto new_addr = Utility::Network::Address::localhost(station_data.mcast_addr.port());
-                if (new_addr != local_address_)
-                    socket_->bind_address(station_data.mcast_addr);
                 socket_->join_multicast(station_data.mcast_addr);
-                local_address_ = new_addr;
+                if (station_data.mcast_addr != local_address_)
+                    socket_->bind_address(Utility::Network::Address::localhost(station_data.mcast_addr.port()));
+                local_address_ = station_data.mcast_addr;
                 station_address_ = station_data.mcast_addr;
             } catch (Utility::Exceptions::SystemError &err) {
-                LOG_ERROR(logger_) << "Cannot connect to station '" << station_name_ << "' on mcast "
-                        << station_address_.host() << " and port " << station_data.mcast_addr.port() << ";"
-                        << " error: " << err.what();
+                LOG_ERROR(logger_) << "Cannot connect to station '" << station_data.name << "` on mcast " 
+                                   << station_data.mcast_addr << ";" << " error: " << err.what();
                 play_station("");
                 return;
             }
