@@ -57,7 +57,7 @@ class IStreamResource : virtual public StreamResource
 {
     friend class StreamResource;
 
-protected:
+protected:    
    explicit IStreamResource() = default;
     /**
      * Initialise new resource assigned to given file descriptor
@@ -120,7 +120,7 @@ public:
 class StreamEvent : public Event
 {
 public:
-    enum EventType : char {CAN_READ, CAN_WRITE};
+    enum EventType : char {CAN_READ, CAN_WRITE, CLOSED};
 
 protected:
     StreamResource *source_;

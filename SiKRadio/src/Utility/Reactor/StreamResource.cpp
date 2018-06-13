@@ -74,6 +74,10 @@ std::shared_ptr<Event> StreamResource::generate_event(uint32_t event_mask, Descr
         action = SUSPEND;
         return std::make_shared<StreamEvent>(this, StreamEvent::CAN_WRITE);
     }
+    if (event_mask & EPOLLRDHUP) {
+        action = SUSPEND;
+        return std::make_shared<StreamEvent>(this, StreamEvent::CLOSED);
+    }
     action = DO_NOTHING;
     return nullptr;
 }
@@ -86,7 +90,7 @@ IStreamResource::IStreamResource(int fd) :
 
 uint32_t IStreamResource::event_mask() const
 {
-    return EPOLLIN;
+    return EPOLLIN | EPOLLRDHUP;
 }
 
 
@@ -131,7 +135,7 @@ bool OStreamResource::write(char *data, size_t len, size_t &wr_len)
 
 uint32_t IOStreamResource::event_mask() const
 {
-    return EPOLLIN | EPOLLOUT;
+    return EPOLLIN | EPOLLOUT | EPOLLRDHUP;
 }
 
 

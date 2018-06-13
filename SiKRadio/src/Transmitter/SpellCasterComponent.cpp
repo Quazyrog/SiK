@@ -44,6 +44,7 @@ void SpellCasterComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event
     } else if ("/Control/Retransmission" == event->name()) {
         auto ev = std::dynamic_pointer_cast<RetransmissionEvent>(event);
         do_retransmission_(ev);
+        handle_stdin_(nullptr); /* Terrible hack to detect EOF */
     }
 }
 
@@ -51,7 +52,11 @@ void SpellCasterComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event
 void SpellCasterComponent::handle_stdin_(std::shared_ptr<Utility::Reactor::StreamEvent> event)
 {
     size_t rd_len;
-    stdin_->read(buffer_ + buffer_fill_, buffer_capacity_ - buffer_fill_, rd_len);
+    bool ret = stdin_->read(buffer_ + buffer_fill_, buffer_capacity_ - buffer_fill_, rd_len);
+    if (ret && rd_len == 0) {
+        LOG_INFO(logger_) << "end of input";
+        reactor_.stop();
+    }
     buffer_fill_ += rd_len;
 
     if (buffer_fill_ >= package_size_) {
@@ -63,7 +68,8 @@ void SpellCasterComponent::handle_stdin_(std::shared_ptr<Utility::Reactor::Strea
         buffer_fill_ -= package_size_;
     }
 
-    event->reenable_source();
+    if (event != nullptr)
+        event->reenable_source();
 }
 
 
