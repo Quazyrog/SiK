@@ -60,6 +60,7 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
 
     } else if ("/Player/Internal/StdoutReady" == event->name()) {
         stdout_ready_ = true;
+        LOG_INFO(logger_) << "stdout ready at last";
         try_write_();
 
     } else if ("/Player/Internal/Retransmit" == event->name()) {
@@ -128,7 +129,11 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
     }
     try {
         AudioBuffer::Packet pk = AudioBuffer::Packet::from_data(buffer, rd_len);
-        // FIXME session id handling
+        if (pk.session_id() > session_id_) {
+            session_id_ = pk.session_id();
+            buffer_.clear();
+        }
+        
         try {
             buffer_.put(pk);
         } catch (std::logic_error &err) {

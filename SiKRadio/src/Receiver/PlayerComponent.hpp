@@ -26,6 +26,7 @@ protected:
     Utility::Network::Address local_address_;
     Utility::Network::Address station_address_;
     Utility::Network::Address station_ctrl_addr_;
+    uint64_t session_id_ = 0;
 
     std::shared_ptr<Utility::Reactor::OStreamResource> stdout_;
     AudioBuffer buffer_;
