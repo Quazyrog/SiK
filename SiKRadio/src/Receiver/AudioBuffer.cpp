@@ -57,7 +57,7 @@ void AudioBuffer::put(const Packet &packet)
 
     } else {
     // Put to non-empty buffer
-        if (!packet.audio_size() != packet_data_size_)
+        if (packet.audio_size() != packet_data_size_)
             throw std::logic_error("Packet data size non compatible");
 
         // Check if slot is free

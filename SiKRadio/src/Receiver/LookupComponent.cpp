@@ -58,12 +58,17 @@ void LookupComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
         auto ev = std::dynamic_pointer_cast<Events::Player::RetransmissionEvent>(event);
         std::stringstream ss;
         ss << "LOUDER_PLEASE ";
-        for (auto pn : ev->packets_list())
+        unsigned int cnt = 0;
+        for (auto pn : ev->packets_list()) {
             ss << pn << ",";
+            ++cnt;
+        }
         auto str = ss.str();
         str[str.length() - 1] = '\n';
-        std::cerr << "LookupComponent: to " << ev->station_address() << " send " << str;
-        ctrl_socket_->send(str.c_str(), str.length(), ev->station_address());
+        if (cnt > 0) {
+            LOG_DEBUG(logger_) << "Requesting retransmission of " << cnt << " packets from " << ev->station_address();
+            ctrl_socket_->send(str.c_str(), str.length(), ev->station_address());
+        }
     }
 }
 

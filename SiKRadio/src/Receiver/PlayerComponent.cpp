@@ -64,7 +64,6 @@ void PlayerComponent::handle_event_(std::shared_ptr<Utility::Reactor::Event> eve
         try_write_();
 
     } else if ("/Player/Internal/Retransmit" == event->name()) {
-        LOG_DEBUG(logger_) << "wants retransmission from " << station_ctrl_addr_;
         reactor_.broadcast_event(std::make_shared<RetransmissionEvent>(buffer_.missing_list(), station_ctrl_addr_));
     }
 }
@@ -130,7 +129,6 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
     }
     try {
         AudioBuffer::Packet pk = AudioBuffer::Packet::from_data(buffer, rd_len);
-        LOG_DEBUG(logger_) << "Arrived " << pk.first_byte_num();
         // FIXME session id handling
         buffer_.put(pk);
         if (!timer_->runing())
