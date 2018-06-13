@@ -130,6 +130,7 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
     }
     try {
         AudioBuffer::Packet pk = AudioBuffer::Packet::from_data(buffer, rd_len);
+        LOG_DEBUG(logger_) << "Arrived " << pk.first_byte_num();
         // FIXME session id handling
         buffer_.put(pk);
         if (!timer_->runing())

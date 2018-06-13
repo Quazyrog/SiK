@@ -7,7 +7,9 @@
 AudioBuffer::AudioBuffer(size_t buffer_size):
         alloc_size_(buffer_size),
         data_(new char [alloc_size_])
-{}
+{
+    clear();
+}
 
 
 AudioBuffer::~AudioBuffer()
@@ -72,7 +74,7 @@ void AudioBuffer::put(const Packet &packet)
     }
 
     // Save how full buffer is
-    received_offset_ = std::max(abs_index_of_(packets_[head_]) - abs_index_of_(packets_[head_]), received_offset_);
+    received_offset_ = std::max(abs_index_of_(packet) - abs_index_of_(packets_[head_]) + 1, received_offset_);
     if (abs_index_of_(packet) - abs_index_of_(packets_[head_]) >= 3 * capacity_ / 4)
         has_magic_ = true;
 }
