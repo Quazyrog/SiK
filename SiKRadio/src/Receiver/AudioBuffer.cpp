@@ -60,10 +60,13 @@ void AudioBuffer::put(const Packet &packet)
         if (packet.audio_size() != packet_data_size_)
             throw std::invalid_argument("Packet data size non compatible");
 
-        // Check if slot is free
-        if (packet.first_byte_num() < packets_[head_].first_byte_num()
-            || abs_index_of_(packet) - abs_index_of_(packets_[head_]) >= capacity_)
-            throw BufferStorageError("Required slot outside buffer's window");
+        // Check if slot is free 
+        if (packet.first_byte_num() < packets_[head_].first_byte_num())
+            throw BufferStorageError("Required slot outside buffer's window (before head)");
+        if (abs_index_of_(packet) - abs_index_of_(packets_[head_]) >= capacity_)
+            throw BufferStorageError(
+                "Required slot outside buffer's window (too ahead of head; " + std::to_string(abs_index_of_(packet)) 
+                + "/" + std::to_string(abs_index_of_(packet)) + ")");
         auto slot_index = rel_index_of_(packet) % capacity_;
         if (meta_table_[slot_index])
             throw BufferStorageError("Required slot is occupied");

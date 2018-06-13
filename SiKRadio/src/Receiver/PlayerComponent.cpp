@@ -9,7 +9,6 @@
 using namespace Events::Player;
 
 
-
 PlayerComponent::PlayerComponent(const Utility::Misc::Params &params, Utility::Reactor::Reactor &reactor,
                                  Utility::Misc::LoggerType logger):
     logger_(logger),
@@ -90,7 +89,7 @@ void PlayerComponent::handle_station_event_(std::shared_ptr<Events::Lookup::Stat
 
         if (station_name_ == event->station_data().name) {
             auto &station_data = event->station_data();
-            LOG_INFO(logger_) << "Trying station `" << station_data.name << "` on " << station_data.mcast_addr;
+            LOG_INFO(logger_) << "Trying station '" << station_data.name << "' on " << station_data.mcast_addr;
             
             // It is our station that we want to update
             if (!station_address_.empty())
@@ -160,7 +159,7 @@ void PlayerComponent::try_write_()
     // Buffer is not empty, we can write
         if (packet.first_byte_num() - last_written_data_ > packet.audio_size())
             LOG_WARNING(logger_) << "skipped " << last_written_data_ << " to " << packet.first_byte_num() - 1
-                                 << " (" << packet.first_byte_num() - last_written_data_ << " bytes)";
+                                << " (" << packet.first_byte_num() - last_written_data_ << " bytes)";
 
         size_t wr_len;
         stdout_->write(packet.audio_data() + partial_write_, packet.audio_size(), wr_len);
@@ -174,6 +173,7 @@ void PlayerComponent::try_write_()
             buffer_.pop_head();
         } else {
             /* Write was partial -> stdout is not ready */
+            LOG_WARNING(logger_) << "Partial write, stdout too slow";
             stdout_ready_ = false;
             reactor_.reenable_resource(stdout_.get());
         }

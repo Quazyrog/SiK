@@ -24,12 +24,12 @@ set(TRANSMITTER_SOURCES
         src/Transmitter/ControlComponent.cpp
         src/Transmitter/Main.cpp
         src/Transmitter/SpellCasterComponent.cpp)
-add_executable(nadajnik ${COMMON_SOURCES} ${TRANSMITTER_SOURCES})
-target_include_directories(nadajnik PUBLIC src/Utility)
+add_executable(sikradio-sender ${COMMON_SOURCES} ${TRANSMITTER_SOURCES})
+target_include_directories(sikradio-sender PUBLIC src/Utility)
 
 set(RECEIVER_SOURCES
         src/Receiver/LookupComponent.cpp
         src/Receiver/Main.cpp
         src/Receiver/PlayerComponent.cpp)
-add_executable(odbiornik ${COMMON_SOURCES} ${RECEIVER_SOURCES})
-target_include_directories(odbiornik PUBLIC src/Utility)
+add_executable(sikradio-receiver ${COMMON_SOURCES} ${RECEIVER_SOURCES})
+target_include_directories(sikradio-receiver PUBLIC src/Utility)
