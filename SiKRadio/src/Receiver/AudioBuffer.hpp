@@ -36,7 +36,7 @@ protected:
 
     bool was_reset_ = false;
     uint64_t offset_;
-    uint64_t received_offset_;
+    uint64_t received_offset_ = 0;
     size_t head_;
     bool has_magic_ = false;
 

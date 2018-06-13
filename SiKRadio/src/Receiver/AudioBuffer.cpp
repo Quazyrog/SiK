@@ -36,7 +36,7 @@ void AudioBuffer::reset_(const Packet &first_packet)
     std::memset(meta_table_, 0, capacity_);
     packets_ = new Packet[capacity_];
     for (size_t i = 0; i < capacity_; ++i)
-        packets_[i] = Packet(data_ + i * first_packet.size(), first_packet.audio_size());
+        packets_[i] = first_packet;
 
     // Mark as reset
     was_reset_ = true;
@@ -91,6 +91,7 @@ void AudioBuffer::clear()
 {
     was_reset_ = false;
     has_magic_ = false;
+    received_offset_ = 0;
 }
 
 

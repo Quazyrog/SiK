@@ -73,6 +73,8 @@ AudioPacket::~AudioPacket()
 void AudioPacket::load(const char *data)
 {
     std::memcpy(data_, data, audio_data_size_ + 2 * sizeof(uint64_t));
+    *first_byte_num_ = hton(*first_byte_num_);
+    *session_id_ = hton(*session_id_);
     if (first_byte_num() % audio_data_size_ != 0)
         throw std::invalid_argument("invalid first byte for given package size");
 }
