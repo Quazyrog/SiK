@@ -130,7 +130,12 @@ void PlayerComponent::handle_data_(std::shared_ptr<Utility::Reactor::StreamEvent
     try {
         AudioBuffer::Packet pk = AudioBuffer::Packet::from_data(buffer, rd_len);
         // FIXME session id handling
-        buffer_.put(pk);
+        try {
+            buffer_.put(pk);
+        } catch (std::logic_error &err) {
+            LOG_WARNING(logger_) << "Cannot store packet with first_byte=" << pk.first_byte_num() << ": " << err.what();
+        }
+        
         if (!timer_->runing())
             timer_->start();
     } catch (std::invalid_argument &err) {
